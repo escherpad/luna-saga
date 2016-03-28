@@ -5,6 +5,7 @@ const isEffect_1 = require("./effects/isEffect");
 const isThunk_1 = require("./util/isThunk");
 const Rx_1 = require("rxjs/Rx");
 const isUndefined_1 = require("./util/isUndefined");
+const setZeroTimeout_1 = require("./util/setZeroTimeout");
 class Saga {
     constructor(proc) {
         let replayLength = 1;
@@ -44,13 +45,14 @@ class Saga {
         }
         //if (isSynchronous) callback(this.yielded.value);
         /** speed comparison for 1000 yields:
-         * no callback: 0.110 s, but stackoverflow at 3900 calls,
-         * setTimeout: 4.88 s. todo: this might need to be optimized
+         * no callback: 0.110 s, but stack overflow at 3900 calls on Chrome.
+         * setTimeout: 4.88 s.
+         * setZeroTimeout: 0.196 s, does not stack overflow.
          */
         if (isSynchronous)
-            setTimeout(() => {
+            setZeroTimeout_1.setZeroTimeout(() => {
                 callback(this.yielded.value);
-            }, 0);
+            });
         return this;
     }
     next(res, err) {
