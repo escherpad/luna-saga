@@ -1,4 +1,4 @@
-# Luna-Saga, A Saga Runner for Reactive Redux Store ([Luna](https://github.com/escherpad/luna))
+# Luna-Saga, Write Business Logic As Generators for Reactive Redux Store [Luna](https://github.com/escherpad/luna)
 
 [![Join the chat at https://gitter.im/escherpad/luna](https://img.shields.io/badge/GITTER-join%20chat-green.svg?style=flat-square)](https://gitter.im/escherpad/luna?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
