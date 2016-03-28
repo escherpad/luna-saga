@@ -1,5 +1,5 @@
 /** Created by ge on 3/28/16. */
-/* adapted from http://ajaxian.com/archives/settimeout-delay */
+/* adapted from Jeff Walden at http://ajaxian.com/archives/settimeout-delay */
 "use strict";
 var timeouts = [];
 var messageName = "@@luna-saga/zero-timeout-message";

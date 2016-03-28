@@ -6,6 +6,7 @@ export default {};
 /** Created by ge on 12/6/15. */
 import {Action, Hash, Reducer, Store, INIT_STORE_ACTION} from "luna";
 import {TSaga} from "./interfaces";
+import {Thunk} from "luna/dist/index";
 
 interface TestAction extends Action {
     payload?:any;
@@ -43,14 +44,16 @@ describe("store thread schedule", function () {
         };
 
         function* proc() {
-            yield 10;
+            yield {type: 'INC'};
         }
 
         var saga$ = new Saga<TState, TestAction>(proc);
         var store$ = new Store<TState>(rootReducer); // does not need to pass in  a inital state
 
-        store$.map(state => ({state, "action": store$.action$.getValue()})).subscribe(_=> console.log("stream:", _));
-        //saga$.dispatch$.subscribe(store$.dispatch);
+        //store$.map(state => ({state, "action": store$.action$.getValue()})).subscribe(_=> console.log("stream:", _));
+        saga$.action$.subscribe((action:TestAction)=>store$.dispatch(action));
+        saga$.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
+
 
 
         var firstAction:TestAction;
