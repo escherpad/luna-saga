@@ -1,5 +1,5 @@
 /** Created by ge on 3/28/16. */
-/* adapted from http://ajaxian.com/archives/settimeout-delay */
+/* adapted from Jeff Walden at http://ajaxian.com/archives/settimeout-delay */
 
 var timeouts:Array<any> = [];
 var messageName:string = "@@luna-saga/zero-timeout-message";
