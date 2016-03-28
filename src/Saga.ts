@@ -72,7 +72,7 @@ export class Saga<TAction> {
             //console.log('===> THROW', err);
             this.yielded = this.process.throw(err);
         } else {
-            console.log('===> YIELD', JSON.stringify(res));
+            //console.log('===> YIELD', JSON.stringify(res));
             this.yielded = this.process.next(res);
         }
         if (this.yielded && this.yielded.done) {

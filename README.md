@@ -50,22 +50,59 @@ references:
 
 You can do: 
 
-```javascript
+```typescript
 import {Saga} from "luna-saga";
-function* process () {
-    yield {type: 'INC', inc: 10}
-    var response = yield Promise.resolve({message: "haha"});
-    yield Rx.Observable.just(42)
+function thunk():()=>Action {
+    return () => {
+        return {type: "DEC"};
+    }
 }
 
-var saga$ = Saga(process).subscribe(
-  function (x) { console.log('next', x); },
-  function (e) { console.log('error', e); },
-  function () { console.log('completed'); }
+function* idMaker():Iterator<any> {
+    yield 0;                                  // 0
+    yield;                                    // undefined
+    yield {type: "INC"};                      // this is an action
+    yield {type: "INC", __isNotAction: true}; // you can bypass the action detection
+    yield thunk();                            // action
+    var result = yield Promise.resolve(1);
+    expect(result).toBe(1);                   // 1
+    var i:number = 0, j:number;
+    while (i <= 3) {
+        j = yield i as number;                // 0, 1, 2, 3
+        expect(i).toBe(j);
+        i++
+    }
+    return "returned value is logged but not evaluated.";
+}
+
+let saga = new Saga<TestAction>(idMaker);
+let startDate = Date.now();
+saga.log$.subscribe(
+    (_:any)=>console.log("log: ", _),
+    (err)=>console.log("saga error: ", err),
+    ()=> {
+        console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
+        done()
+    }
 );
-// next: {type: 'INC', inc: 10}
-// next: {message: "haha"}
-// next: 42
+saga.action$.subscribe((_:any)=>console.log("action: ", _));
+saga.thunk$.subscribe((_:any)=>console.log("thunk: ", _));
+saga.run();
+
+// 'log: ', 0
+// 'log: ', undefined
+// 'log: ', Object{type: 'INC'}
+// 'action: ', Object{type: 'INC'}
+// 'log: ', Object{type: 'INC', __isNotAction: true}
+// 'log: ', () => { ... }
+// 'thunk: ', () => { ... }
+// 'log: ', Promise{}
+// 'log: ', 0
+// 'log: ', 1
+// 'log: ', 2
+// 'log: ', 3
+// 'log: ', 'returned value is logged but not evaluated.'
+// 'saga execution took 0.005 seconds'
 ```
 
 #### To hook up `saga$` to your luna `store$`, just do:

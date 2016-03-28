@@ -10,7 +10,6 @@ interface TestAction extends Action {
     payload?:any;
 }
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 describe("generator syntax", function () {
     it("process runner should work", function (done:()=>void) {
         function thunk():()=>Action {
@@ -26,16 +25,15 @@ describe("generator syntax", function () {
             // you can bypass the action detection
             yield {type: "INC", __isNotAction: true};
             yield thunk();
-            //var result = yield Promise.resolve(1);
-            //console.log('======================');
-            //expect(result).toBe(1);
-            var i:number = 0;
-            var j:number;
-            while (i <= 6000) {
+            var result = yield Promise.resolve(1);
+            expect(result).toBe(1);
+            var i:number = 0, j:number;
+            while (i <= 3) {
                 j = yield i as number;
                 expect(i).toBe(j);
                 i++
             }
+            return "returned value is logged but not evaluated.";
         }
 
         let saga = new Saga<TestAction>(idMaker);
@@ -43,8 +41,8 @@ describe("generator syntax", function () {
         saga.log$.subscribe(
             (_:any)=>console.log("log: ", _),
             (err)=>console.log("saga error: ", err),
-            ()=>{
-                console.log(`saga execution took ${(Date.now() - startDate)/1000} seconds`);
+            ()=> {
+                console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
                 done()
             }
         );
