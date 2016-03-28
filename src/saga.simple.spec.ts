@@ -39,14 +39,12 @@ describe("generator syntax", function () {
         }
 
         let saga = new Saga<TestAction>(idMaker);
-        console.time('saga');
+        let startDate = Date.now();
         saga.log$.subscribe(
             (_:any)=>console.log("log: ", _),
-            (err)=>console.error(err),
+            (err)=>console.log("saga error: ", err),
             ()=>{
-                console.log('**********************');
-                console.timeEnd('saga');
-                console.log('**********************');
+                console.log(`saga execution took ${(Date.now() - startDate)/1000} seconds`);
                 done()
             }
         );

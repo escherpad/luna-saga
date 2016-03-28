@@ -54,7 +54,14 @@ export class Saga<TAction> {
             this.action$.next(this.yielded.value);
         } else {
         }
-        if (isSynchronous) callback(this.yielded.value);
+        //if (isSynchronous) callback(this.yielded.value);
+        /** speed comparison for 1000 yields:
+         * no callback: 0.110 s, but stackoverflow at 3900 calls,
+         * setTimeout: 4.88 s. todo: this might need to be optimized
+         */
+        if (isSynchronous) setTimeout(():void=> {
+            callback(this.yielded.value)
+        }, 0);
         return this;
     }
 
@@ -80,7 +87,7 @@ export class Saga<TAction> {
         return this;
     }
 
-    complete(){
+    complete() {
         this.log$.complete();
         this.action$.complete();
         this.thunk$.complete();
