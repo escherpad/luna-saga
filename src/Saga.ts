@@ -8,6 +8,7 @@ import {isEffect} from "./effects/isEffect";
 import {isThunk} from "./util/isThunk";
 import {ReplaySubject} from "rxjs/Rx";
 import {isUndefined} from "./util/isUndefined";
+import {setZeroTimeout} from "./util/setZeroTimeout";
 
 export class Saga<TAction> {
     private process:Iterator<any>;
@@ -56,12 +57,13 @@ export class Saga<TAction> {
         }
         //if (isSynchronous) callback(this.yielded.value);
         /** speed comparison for 1000 yields:
-         * no callback: 0.110 s, but stackoverflow at 3900 calls,
-         * setTimeout: 4.88 s. todo: this might need to be optimized
+         * no callback: 0.110 s, but stack overflow at 3900 calls on Chrome.
+         * setTimeout: 4.88 s.
+         * setZeroTimeout: 0.196 s, does not stack overflow.
          */
-        if (isSynchronous) setTimeout(():void=> {
+        if (isSynchronous) setZeroTimeout(():void=> {
             callback(this.yielded.value)
-        }, 0);
+        });
         return this;
     }
 

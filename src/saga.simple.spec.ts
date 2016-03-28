@@ -31,7 +31,7 @@ describe("generator syntax", function () {
             //expect(result).toBe(1);
             var i:number = 0;
             var j:number;
-            while (i <= 1000) {
+            while (i <= 6000) {
                 j = yield i as number;
                 expect(i).toBe(j);
                 i++
