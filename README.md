@@ -4,6 +4,8 @@
 
 Luna-saga is a saga runner built for Luna, a reactive redux implementation based on the Reactive-Extension (Rxjs@v5.0-beta) and build with Typescript. It enhances Rxjs's existing handling operators for Es6 generators by adding support for store `Actions` and a collection of flow management helpers. 
 
+** In English: luna-saga allows you to write all of your business logic synchronously using generators. It is awesome, easier than reactive-thunks, and cleaner than stateful thunk. **
+
 **get started:** run `npm install luna-saga --save` *after* you install `luna` with `npm install luna --save`
 
 ## For Angular2 Developers Out There~
