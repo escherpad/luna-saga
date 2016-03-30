@@ -41,19 +41,15 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
     executeEffect(effect:TEffectBase&any):Promise<any> {
         let type:TSym = effect.type;
         if (type === TAKE) {
-            console.log('is TAKE effect');
             let _effect:ITakeEffect = effect;
             return takeHandler(_effect, this);
         } else if (type === DISPATCH) {
-            console.log('is DISPATCH effect');
             let _effect:IDispatchEffect = effect;
             return dispatchHandler(_effect, this);
         } else if (type === CALL) {
-            console.log('is CALL effect');
             let _effect:ICallEffect = effect;
             return callHandler(_effect, this);
         } else if (type === SELECT) {
-            console.log('is SELECT effect');
             let _effect:ISelectEffect = effect;
             return selectHandler(_effect, this);
         } else {
@@ -68,10 +64,8 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
             // What the generator gets when it `const variable = yield;`.
             // we can pass back a callback function if we want.
         } else if (isThunk(yielded.value)) {
-            console.log('isThunk', yielded.value);
             this.thunk$.next(yielded.value);
         } else if (isPromise(yielded.value)) {
-            console.log('isPromise', yielded.value);
             isSynchronous = false;
             let p = yielded.value;
             p.then(
@@ -83,20 +77,16 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
                 }
             )
         } else if (isEffect(yielded.value)) {
-            console.log('is effect', yielded.value);
             isSynchronous = false;
             let p = this.executeEffect(yielded.value).then(
                 (res:any):void => {
-                    console.log("******>", res);
                     callback(res);
                 },
                 (err:any):void => {
-                    console.log("******>", err);
                     callback(null, err);
                 }
             );
         } else if (isAction(yielded.value)) {
-            //console.log('isAction', yielded.value);
             this.action$.next(yielded.value);
         }
         /** speed comparison for 1000 yields:
@@ -105,14 +95,12 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
          * setZeroTimeout: 0.196 s, does not stack overflow.
          */
         if (isSynchronous) setZeroTimeout(():void=> {
-            //console.log("=======================================================");
             callback(yielded.value)
         });
         return this;
     }
 
     next(value:any) {
-        //console.log(`saga.next called with${JSON.stringify(value)}`);
         super.next(value);
         this.replay$.next(value);
     }
@@ -120,13 +108,9 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
     nextYield(res?:any, err?:any) {
         let yielded:IteratorResult<any>;
         if (typeof err !== "undefined") {
-            console.log(`this.process.THROW(${err})`);
             yielded = this.process.throw(err);
-            console.log(`yielded = ${yielded}`);
         } else {
-            console.log(`this.process.NEXT(${JSON.stringify(res)})`);
             yielded = this.process.next(res);
-            console.log(`yielded = ${JSON.stringify(yielded)}`);
         }
         if (yielded && yielded.done) {
             this.evaluateYield(yielded, ()=> this.complete());

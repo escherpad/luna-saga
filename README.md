@@ -118,41 +118,51 @@ saga.run();
 
 The next thing to do is to build a set of process helpers, side-effects and flow-control helpers. I'm implementing this following `redux-saga` fantastic API documentation [here](http://yelouafi.github.io/redux-saga/docs/api/index.html).
 
-### To hook up `saga$` to your luna `store$`, just do:
-
-```javascript
-// store$ is your luna rxjs store
-saga$.action$.subscribe((action:TestAction)=>store$.dispatch(action));
-saga$.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
-```
-
-## Architecture Overview
-
-Luna-saga returns three useful streams, `<saga>.action$`, `<saga>.thunk$`, `<saga>.log$`. They emit streams of action/thunk/yielded objects that you can subscribe to. 
 
 ## Installing Luna-Saga
 
-from npm: 
-```shell
-npm install luna-saga
-```
-
-or from github
+You can install from npm: `npm install luna-saga`, or from github
 ```shell
 npm install luna-saga@git+https://git@github.com/escherpad/luna-saga.git 
 ```
 
-## Developing Luna-Saga
+### To hook up `saga$` to your luna `store$`, just do:
 
-- you need to have `karma-cli` installed globally. (do `npm install -g karma-cli`)
-- to build, run `npm run build`. This just calls `tsc` in project root.
-- to test, you can use `karma start`. I use webStorm's karma integration to run the tests.
+```javascript
+// processGenerator is your generator
+// Don't forget to `run` it!
+let saga = new Saga(processGenerator).run();
+
+// store$ is your luna rxjs store
+store$.subscribe(saga)
+
+saga.action$.subscribe((action:TestAction)=>store$.dispatch(action));
+saga.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
+```
+
+## The Instance
+
+Calling `new Saga(processGenerator)` returns a `saga` instance. Luna `saga` instance is inhereted from Rxjs.Subject.
+
+The `saga.log$` is a (Publish) Subject for all of the yielded expressions from the generator. 
+
+- if yielded expression is a simple object, the object is logged.
+- if yielded expression is an action, the object is logged and pushed to `.action$`.
+- if yielded expression is an action but with `__isNotAction` flag, it is logged but not pushed to `.action$`
+- if yielded expression is a Promise, it is logged
+- The return value of the generator is logged but not evaluated.
+
+The `saga.update$` is a ReplaySubject with a buffer size of 1. This means that you can always get the current value of the `store$` state by quering `saga.update$.getValue()`. Subscribing to `saga.update$` results in a `{state, action}` data on subscription. 
+
+The `saga.action$` is a (Publish) Subject for out-going actions that you are gonna dispatch back to the store. It does not have the `getValue()` method.
+
+The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna dispatch back to the store. It also does not have the `getValue()` method.
 
 
 ## Todo (and Progress):
 
 1. [x] generator spawning and test => `new Saga(proc)`
-2. [x] `take` effect [in progress]
+2. [x] `take` effect
 3. [x] `dispatch` (replace name `put`) effect 
 3. [x] `call` effect 
 3. [x] `apply` effect (`call` alias)
@@ -235,6 +245,12 @@ returns a selected part of the store state. If selector is undefined, select ret
 let data = yield select() // <entire store>
 let data = yield select("number") // 1
 ```
+
+## Developing Luna-Saga
+
+- you need to have `karma-cli` installed globally. (do `npm install -g karma-cli`)
+- to build, run `npm run build`. This just calls `tsc` in project root.
+- to test, you can use `karma start`. I use webStorm's karma integration to run the tests.
 
 Work In Progress Below This Line
 ----
