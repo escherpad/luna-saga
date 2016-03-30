@@ -3,17 +3,17 @@ const isPromise_1 = require("./util/isPromise");
 const isAction_1 = require("./util/isAction");
 const isEffect_1 = require("./effects/isEffect");
 const isThunk_1 = require("./util/isThunk");
-const Rx_1 = require("rxjs/Rx");
+const rxjs_1 = require("rxjs");
 const isUndefined_1 = require("./util/isUndefined");
 const setZeroTimeout_1 = require("./util/setZeroTimeout");
 const effectsHelpers_1 = require("./effects/effectsHelpers");
-class Saga extends Rx_1.Subject {
+class Saga extends rxjs_1.Subject {
     constructor(proc) {
         super(); // replay just no past event, just broadcase new ones.
-        this.log$ = new Rx_1.Subject();
-        this.action$ = new Rx_1.Subject();
-        this.thunk$ = new Rx_1.Subject();
-        this.replay$ = new Rx_1.ReplaySubject(1);
+        this.log$ = new rxjs_1.Subject();
+        this.action$ = new rxjs_1.Subject();
+        this.thunk$ = new rxjs_1.Subject();
+        this.replay$ = new rxjs_1.ReplaySubject(1);
         this.setProcess(proc);
     }
     setProcess(proc) {

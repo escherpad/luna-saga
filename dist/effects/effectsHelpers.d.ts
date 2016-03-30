@@ -2,7 +2,7 @@
 import { TSym } from "../util/Sym";
 import { TEffectBase } from "./interfaces";
 import { Action, StateActionBundle } from "luna";
-import { Subject } from "rxjs/Rx";
+import { Subject } from "rxjs";
 import { TSaga } from "../interfaces";
 export declare const EFFECT: TSym;
 export interface ITakeEffect extends TEffectBase {
