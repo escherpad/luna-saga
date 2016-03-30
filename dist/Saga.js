@@ -24,22 +24,18 @@ class Saga extends Rx_1.Subject {
     executeEffect(effect) {
         let type = effect.type;
         if (type === effectsHelpers_1.TAKE) {
-            console.log('is TAKE effect');
             let _effect = effect;
             return effectsHelpers_1.takeHandler(_effect, this);
         }
         else if (type === effectsHelpers_1.DISPATCH) {
-            console.log('is DISPATCH effect');
             let _effect = effect;
             return effectsHelpers_1.dispatchHandler(_effect, this);
         }
         else if (type === effectsHelpers_1.CALL) {
-            console.log('is CALL effect');
             let _effect = effect;
             return effectsHelpers_1.callHandler(_effect, this);
         }
         else if (type === effectsHelpers_1.SELECT) {
-            console.log('is SELECT effect');
             let _effect = effect;
             return effectsHelpers_1.selectHandler(_effect, this);
         }
@@ -53,11 +49,9 @@ class Saga extends Rx_1.Subject {
         if (isUndefined_1.isUndefined(yielded.value)) {
         }
         else if (isThunk_1.isThunk(yielded.value)) {
-            console.log('isThunk', yielded.value);
             this.thunk$.next(yielded.value);
         }
         else if (isPromise_1.isPromise(yielded.value)) {
-            console.log('isPromise', yielded.value);
             isSynchronous = false;
             let p = yielded.value;
             p.then((res) => {
@@ -67,18 +61,14 @@ class Saga extends Rx_1.Subject {
             });
         }
         else if (isEffect_1.isEffect(yielded.value)) {
-            console.log('is effect', yielded.value);
             isSynchronous = false;
             let p = this.executeEffect(yielded.value).then((res) => {
-                console.log("******>", res);
                 callback(res);
             }, (err) => {
-                console.log("******>", err);
                 callback(null, err);
             });
         }
         else if (isAction_1.isAction(yielded.value)) {
-            //console.log('isAction', yielded.value);
             this.action$.next(yielded.value);
         }
         /** speed comparison for 1000 yields:
@@ -88,27 +78,21 @@ class Saga extends Rx_1.Subject {
          */
         if (isSynchronous)
             setZeroTimeout_1.setZeroTimeout(() => {
-                //console.log("=======================================================");
                 callback(yielded.value);
             });
         return this;
     }
     next(value) {
-        //console.log(`saga.next called with${JSON.stringify(value)}`);
         super.next(value);
         this.replay$.next(value);
     }
     nextYield(res, err) {
         let yielded;
         if (typeof err !== "undefined") {
-            console.log(`this.process.THROW(${err})`);
             yielded = this.process.throw(err);
-            console.log(`yielded = ${yielded}`);
         }
         else {
-            console.log(`this.process.NEXT(${JSON.stringify(res)})`);
             yielded = this.process.next(res);
-            console.log(`yielded = ${JSON.stringify(yielded)}`);
         }
         if (yielded && yielded.done) {
             this.evaluateYield(yielded, () => this.complete());

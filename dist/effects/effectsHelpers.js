@@ -92,11 +92,9 @@ function selectHandler(effect, _this) {
     let selector = effect.selector;
     return new Promise((resolve, reject) => {
         let isResolved = false;
-        console.log('=============================');
         /* the actions should be synchronous, however race condition need to be tested. */
         _this.replay$.take(1)
             .map((update) => {
-            console.log(update, selector);
             if (typeof selector === "undefined") {
                 return update.state;
             }
