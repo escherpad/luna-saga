@@ -148,14 +148,15 @@ npm install luna-saga@git+https://git@github.com/escherpad/luna-saga.git
 - to build, run `npm run build`. This just calls `tsc` in project root.
 - to test, you can use `karma start`. I use webStorm's karma integration to run the tests.
 
-Work In Progress Below This Line
-----
 
 ## Todo (and Progress):
 
 1. [x] generator spawning and test => `new Saga(proc)`
-2. [ ] `take` effect [in progress]
-3. [ ] `put` effect 
+2. [x] `take` effect [in progress]
+3. [x] `dispatch` (replace name `put`) effect 
+3. [x] `call` effect 
+3. [x] `apply` effect (`call` alias)
+3. [x] `select` effect 
 4. [ ] `takeEvery` helper
 5. [ ] `takeLast` helper
 6. [ ] ... many other effects
@@ -163,16 +164,87 @@ Work In Progress Below This Line
 8. [ ] `parallel` flow controller
 
 
-## Saga Helpers, Effects, and Flow helpers (coming this week!)
+## Saga Helpers, Effects, and Flow helpers (Updated Below!)
 
+These special functions are implemented following the API documentasion of `redux-saga`. You can look at the details [here](http://yelouafi.github.io/redux-saga/docs/api/index.html). Below is the documentation for `luna-saga`.
+
+### Saga Effects: `take`, `put`, `call`, `apply`, `cps`, `fork`, `join`, `cancel`, `select`
+
+Effect is short for **side-effect**. `luna-saga`'s effect collection allows you to write things synchronously while keeping the generators pure. These side-effect functions merely produce a side-effect object, which is then processed by `saga` internally to do the correct thing.
+
+Below is the test for redux-saga. You can look at what is happening here to understand how they work.
+
+
+```typescript
+function* idMaker():Iterator<any> {
+    let update:any;
+    update = yield take("INC");
+    console.log('1 *****', update);
+    expect(update).toEqual({state: {number: 1}, action: {type: "INC"}});
+    // can test NOOP actions without getting hangup
+    update = yield dispatch({type: "NOOP"});
+    console.log('2 *****', update);
+    expect(update).toEqual({state: {number: 1}, action: {type: "NOOP"}});
+    update = yield call(()=> "returned value");
+    console.log('3 *****', update);
+    expect(update).toEqual("returned value");
+    update = yield call([{color: "red"}, function (flower:any) {
+        return `${flower} is ${this.color}`
+    }], "rose");
+    expect(update).toBe('rose is red');
+    update = yield apply({color: "blue"}, function (thing:any) {
+        return `${thing} is ${this.color}`
+    }, "sky");
+    expect(update).toBe('sky is blue');
+    let state:any;
+    state = yield select();
+    expect(state).toEqual({number: 1});
+    state = yield select("number");
+    expect(state).toBe(1);
+    yield done;
+}
+```
+
+#### `take(ACTION_TYPE) yield {state, action}`
+
+say in your generator you want to pause the process untill the process recieves a certain action. You can write: 
+
+```javascript
+let update = yield take("your_action_type");
+// update = {state: <your current state>, action: <the action for that state>}
+```
+
+#### `dispatch(action) yield {state, action}` (`put` in redux-saga)
+
+use this to dispatch an action. This function does not support thunk at the moment. 
+
+```javascript
+let update = yield dispatch(<your_action_>);
+// update = {state: <your state>, action: <action>}
+```
+
+#### `call(fn[, args]) yield <return from fn>`, `call([context, fn][, args])` and `apply(context, fn[, args])`
+
+I didn't really see a huge need for these but I implemented them anyways. You can yield functions directly without using side effect. However these are useful when you want to run object methods.
+
+#### `select([selector:string]) return <selected part of state>`
+
+returns a selected part of the store state. If selector is undefined, select returns the entire store state.
+
+```javascript
+let data = yield select() // <entire store>
+let data = yield select("number") // 1
+```
+
+Work In Progress Below This Line
+----
 ### Saga Helpers: `takeLast` and `takeEvery`
 
 These are the high-level helpers to spawn sagas processes from within a saga. `takeEvery` and `takeLast` are similar to the `rxjs.takeEvery` and `rxjs.takeLast`
 
-### Saga Effects: `take`, `put`, `call`, `apply`, `cps`, `fork`, `join`, `cancel`, `select`
-
 ### Flow helpers: `race(effects)` and `parallel([...effects])`
 
+Allows one to pick the result of a winner, or run a few effects in parallel. 
 
 ## Acknowledgement
 

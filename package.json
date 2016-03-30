@@ -41,7 +41,7 @@
   "dependencies": {
     "es6-shim": "^0.35.0",
     "lodash": "^4.6.1",
-    "luna": "^1.0.5",
+    "luna": "^1.2.0",
     "rxjs": "^5.0.0-alpha.14"
   },
   "devDependencies": {

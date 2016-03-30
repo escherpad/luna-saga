@@ -3,7 +3,7 @@
 import {isPromise} from "rxjs/util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
-import {ReplaySubject} from "rxjs/Rx";
+import {Subject} from "rxjs/Rx";
 import {Saga} from "./Saga";
 import {Action} from "luna";
 interface TestAction extends Action {

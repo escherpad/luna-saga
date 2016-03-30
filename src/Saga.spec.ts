@@ -5,7 +5,6 @@ export default {};
 
 /** Created by ge on 12/6/15. */
 import {Action, Hash, Reducer, Store, INIT_STORE_ACTION} from "luna";
-import {TSaga} from "./interfaces";
 import {Thunk} from "luna/dist/index";
 
 interface TestAction extends Action {

@@ -1,27 +1,35 @@
 /** Created by ge on 12/4/15. */
-//import {Subject, ReplaySubject, Observable} from 'rxjs/Rx';
-import {Action, Thunk, Reducer, Hash} from "luna";
-import {TSaga} from "./interfaces";
+//import {Subject, Subject, Observable} from 'rxjs/Rx';
+import {Action, Thunk, Reducer, Hash, StateActionBundle} from "luna";
 import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
 import {isThunk} from "./util/isThunk";
-import {ReplaySubject} from "rxjs/Rx";
+import {Subject, ReplaySubject} from "rxjs/Rx";
 import {isUndefined} from "./util/isUndefined";
 import {setZeroTimeout} from "./util/setZeroTimeout";
+import {TEffectBase} from "./effects/interfaces";
+import {TSym} from "./util/Sym";
+import {
+    TAKE, DISPATCH, CALL, SELECT,
+    take, dispatch, call, apply, select,
+    ITakeEffect, IDispatchEffect, ICallEffect, ISelectEffect,
+    takeHandler, dispatchHandler, callHandler, selectHandler
+} from "./effects/effectsHelpers";
 
-export class Saga<TAction> {
+export class Saga<TState> extends Subject<StateActionBundle<TState>> {
     private process:Iterator<any>;
-    private yielded:any;
-    public log$:ReplaySubject<any>;
-    public action$:ReplaySubject<any>;
-    public thunk$:ReplaySubject<()=>any>;
+    public replay$:ReplaySubject<StateActionBundle<TState>>;
+    public log$:Subject<any>;
+    public action$:Subject<any>;
+    public thunk$:Subject<()=>any>;
 
     constructor(proc:()=>Iterator<any>) {
-        let replayLength = 1;
-        this.log$ = new ReplaySubject<any>(replayLength);
-        this.action$ = new ReplaySubject<TAction>(replayLength);
-        this.thunk$ = new ReplaySubject<()=>any>(replayLength);
+        super();// replay just no past event, just broadcase new ones.
+        this.log$ = new Subject<any>();
+        this.action$ = new Subject<Action>();
+        this.thunk$ = new Subject<()=>any>();
+        this.replay$ = new ReplaySubject<StateActionBundle<TState>>(1);
         this.setProcess(proc);
     }
 
@@ -30,18 +38,42 @@ export class Saga<TAction> {
         return this;
     }
 
+    executeEffect(effect:TEffectBase&any):Promise<any> {
+        let type:TSym = effect.type;
+        if (type === TAKE) {
+            console.log('is TAKE effect');
+            let _effect:ITakeEffect = effect;
+            return takeHandler(_effect, this);
+        } else if (type === DISPATCH) {
+            console.log('is DISPATCH effect');
+            let _effect:IDispatchEffect = effect;
+            return dispatchHandler(_effect, this);
+        } else if (type === CALL) {
+            console.log('is CALL effect');
+            let _effect:ICallEffect = effect;
+            return callHandler(_effect, this);
+        } else if (type === SELECT) {
+            console.log('is SELECT effect');
+            let _effect:ISelectEffect = effect;
+            return selectHandler(_effect, this);
+        } else {
+            return Promise.reject(`executeEffect Error: effect is not found ${JSON.stringify(effect)}`);
+        }
+    }
 
-    evaluateYield(callback:(res?:any, err?:any)=>void) {
-        this.log$.next(this.yielded.value);
+    evaluateYield(yielded:IteratorResult<any>, callback:(res?:any, err?:any)=>void) {
+        this.log$.next(yielded.value);
         var isSynchronous = true;
-        if (isUndefined(this.yielded.value)) {
+        if (isUndefined(yielded.value)) {
             // What the generator gets when it `const variable = yield;`.
             // we can pass back a callback function if we want.
-        } else if (isThunk(this.yielded.value)) {
-            this.thunk$.next(this.yielded.value);
-        } else if (isPromise(this.yielded.value)) {
+        } else if (isThunk(yielded.value)) {
+            console.log('isThunk', yielded.value);
+            this.thunk$.next(yielded.value);
+        } else if (isPromise(yielded.value)) {
+            console.log('isPromise', yielded.value);
             isSynchronous = false;
-            let p = this.yielded.value;
+            let p = yielded.value;
             p.then(
                 (res:any):void => {
                     callback(res);
@@ -50,42 +82,63 @@ export class Saga<TAction> {
                     callback(null, err);
                 }
             )
-        } else if (isEffect(this.yielded.value)) {
-        } else if (isAction(this.yielded.value)) {
-            this.action$.next(this.yielded.value);
-        } else {
+        } else if (isEffect(yielded.value)) {
+            console.log('is effect', yielded.value);
+            isSynchronous = false;
+            let p = this.executeEffect(yielded.value).then(
+                (res:any):void => {
+                    console.log("******>", res);
+                    callback(res);
+                },
+                (err:any):void => {
+                    console.log("******>", err);
+                    callback(null, err);
+                }
+            );
+        } else if (isAction(yielded.value)) {
+            //console.log('isAction', yielded.value);
+            this.action$.next(yielded.value);
         }
-        //if (isSynchronous) callback(this.yielded.value);
         /** speed comparison for 1000 yields:
          * no callback: 0.110 s, but stack overflow at 3900 calls on Chrome.
          * setTimeout: 4.88 s.
          * setZeroTimeout: 0.196 s, does not stack overflow.
          */
         if (isSynchronous) setZeroTimeout(():void=> {
-            callback(this.yielded.value)
+            //console.log("=======================================================");
+            callback(yielded.value)
         });
         return this;
     }
 
-    next(res?:any, err?:any) {
+    next(value:any) {
+        //console.log(`saga.next called with${JSON.stringify(value)}`);
+        super.next(value);
+        this.replay$.next(value);
+    }
+
+    nextYield(res?:any, err?:any) {
+        let yielded:IteratorResult<any>;
         if (typeof err !== "undefined") {
-            //console.log('===> THROW', err);
-            this.yielded = this.process.throw(err);
+            console.log(`this.process.THROW(${err})`);
+            yielded = this.process.throw(err);
+            console.log(`yielded = ${yielded}`);
         } else {
-            //console.log('===> YIELD', JSON.stringify(res));
-            this.yielded = this.process.next(res);
+            console.log(`this.process.NEXT(${JSON.stringify(res)})`);
+            yielded = this.process.next(res);
+            console.log(`yielded = ${JSON.stringify(yielded)}`);
         }
-        if (this.yielded && this.yielded.done) {
-            this.evaluateYield(()=> this.complete());
+        if (yielded && yielded.done) {
+            this.evaluateYield(yielded, ()=> this.complete());
         } else {
-            this.evaluateYield((res?:any, err?:any)=>this.next(res, err));
+            this.evaluateYield(yielded, (res?:any, err?:any)=>this.nextYield(res, err));
         }
         return this;
     }
 
     run() {
         if (typeof this.process === "undefined") return this;
-        this.next();
+        this.nextYield();
         return this;
     }
 
