@@ -24,8 +24,9 @@ describe("generator syntax", function () {
             yield {type: "INC"};
             // you can bypass the action detection
             yield {type: "INC", __isNotAction: true};
-            yield thunk();
-            var result = yield Promise.resolve(1);
+            let result = yield thunk();
+            expect(typeof result).toBe('function');
+            result = yield Promise.resolve(1);
             expect(result).toBe(1);
             var i:number = 0, j:number;
             while (i <= 3) {

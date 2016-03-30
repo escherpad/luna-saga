@@ -34,7 +34,7 @@
     "clean": "rimraf dist",
     "build:src": "tsc",
     "build": "npm run clean && npm run build:src",
-    "patch-and-publish": "npm run build && git add . && git commit -m 'BUILD' && git push && npm version patch"
+    "publish-patch": "npm run build && git add . && git commit -m 'BUILD' && git push && npm version patch"
   },
   "author": "Ge Yang <yangge1987@gmail.com>",
   "license": "MIT",

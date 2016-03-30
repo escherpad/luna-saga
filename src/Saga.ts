@@ -3,7 +3,7 @@ import {Action, Thunk, Reducer, Hash, StateActionBundle} from "luna";
 import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
-import {isThunk} from "./util/isThunk";
+import {isFunction} from "./util/isFunction";
 import {Subject, ReplaySubject} from "rxjs";
 import {isUndefined} from "./util/isUndefined";
 import {setZeroTimeout} from "./util/setZeroTimeout";
@@ -62,7 +62,7 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
         if (isUndefined(yielded.value)) {
             // What the generator gets when it `const variable = yield;`.
             // we can pass back a callback function if we want.
-        } else if (isThunk(yielded.value)) {
+        } else if (isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
         } else if (isPromise(yielded.value)) {
             isSynchronous = false;
