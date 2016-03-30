@@ -2,7 +2,7 @@
 const isPromise_1 = require("./util/isPromise");
 const isAction_1 = require("./util/isAction");
 const isEffect_1 = require("./effects/isEffect");
-const isThunk_1 = require("./util/isThunk");
+const isFunction_1 = require("./util/isFunction");
 const rxjs_1 = require("rxjs");
 const isUndefined_1 = require("./util/isUndefined");
 const setZeroTimeout_1 = require("./util/setZeroTimeout");
@@ -48,7 +48,7 @@ class Saga extends rxjs_1.Subject {
         var isSynchronous = true;
         if (isUndefined_1.isUndefined(yielded.value)) {
         }
-        else if (isThunk_1.isThunk(yielded.value)) {
+        else if (isFunction_1.isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
         }
         else if (isPromise_1.isPromise(yielded.value)) {

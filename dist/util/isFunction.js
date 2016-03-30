@@ -1,6 +1,6 @@
 "use strict";
 /** Created by ge on 3/27/16. */
-function isThunk(obj) {
+function isFunction(obj) {
     return (typeof obj === "function");
 }
-exports.isThunk = isThunk;
+exports.isFunction = isFunction;
