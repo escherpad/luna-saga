@@ -1,6 +1,6 @@
 /** Created by ge on 12/6/15. */
 import {Action, Thunk} from "luna";
-import {Subject, ReplaySubject} from "rxjs/Rx";
+import {Subject, ReplaySubject} from "rxjs";
 
 export interface TSaga<T> extends Subject<T> {
     replay$:ReplaySubject<T>;

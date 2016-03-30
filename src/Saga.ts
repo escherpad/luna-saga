@@ -1,11 +1,10 @@
 /** Created by ge on 12/4/15. */
-//import {Subject, Subject, Observable} from 'rxjs/Rx';
 import {Action, Thunk, Reducer, Hash, StateActionBundle} from "luna";
 import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
 import {isThunk} from "./util/isThunk";
-import {Subject, ReplaySubject} from "rxjs/Rx";
+import {Subject, ReplaySubject} from "rxjs";
 import {isUndefined} from "./util/isUndefined";
 import {setZeroTimeout} from "./util/setZeroTimeout";
 import {TEffectBase} from "./effects/interfaces";
