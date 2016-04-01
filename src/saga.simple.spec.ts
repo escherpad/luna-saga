@@ -29,7 +29,7 @@ describe("generator syntax", function () {
             result = yield Promise.resolve(1);
             expect(result).toBe(1);
             var i:number = 0, j:number;
-            while (i <= 3) {
+            while (i <= 1000) {
                 j = yield i as number;
                 expect(i).toBe(j);
                 i++

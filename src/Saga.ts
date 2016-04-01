@@ -6,7 +6,7 @@ import {isEffect} from "./effects/isEffect";
 import {isFunction} from "./util/isFunction";
 import {Subject, ReplaySubject} from "rxjs";
 import {isUndefined} from "./util/isUndefined";
-import {setZeroTimeout} from "./util/setZeroTimeout";
+import "setimmediate"; // refer to https://github.com/YuzuJS/setImmediate/issues/48
 import {TEffectBase} from "./effects/interfaces";
 import {TSym} from "./util/Sym";
 import {
@@ -92,8 +92,9 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
          * no callback: 0.110 s, but stack overflow at 3900 calls on Chrome.
          * setTimeout: 4.88 s.
          * setZeroTimeout: 0.196 s, does not stack overflow.
+         * setImmediate cross-platform package: 0.120 s. fantastic.
          */
-        if (isSynchronous) setZeroTimeout(():void=> {
+        if (isSynchronous) setImmediate(():void=> {
             callback(yielded.value)
         });
         return this;
