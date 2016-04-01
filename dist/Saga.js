@@ -5,7 +5,7 @@ const isEffect_1 = require("./effects/isEffect");
 const isFunction_1 = require("./util/isFunction");
 const rxjs_1 = require("rxjs");
 const isUndefined_1 = require("./util/isUndefined");
-const setZeroTimeout_1 = require("./util/setZeroTimeout");
+require("setimmediate"); // refer to https://github.com/YuzuJS/setImmediate/issues/48
 const effectsHelpers_1 = require("./effects/effectsHelpers");
 class Saga extends rxjs_1.Subject {
     constructor(proc) {
@@ -75,9 +75,10 @@ class Saga extends rxjs_1.Subject {
          * no callback: 0.110 s, but stack overflow at 3900 calls on Chrome.
          * setTimeout: 4.88 s.
          * setZeroTimeout: 0.196 s, does not stack overflow.
+         * setImmediate cross-platform package: 0.120 s. fantastic.
          */
         if (isSynchronous)
-            setZeroTimeout_1.setZeroTimeout(() => {
+            setImmediate(() => {
                 callback(yielded.value);
             });
         return this;

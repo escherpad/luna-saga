@@ -1,6 +1,7 @@
 /** Created by ge on 12/4/15. */
 import { StateActionBundle } from "luna";
 import { Subject, ReplaySubject } from "rxjs";
+import "setimmediate";
 import { TEffectBase } from "./effects/interfaces";
 export declare class Saga<TState> extends Subject<StateActionBundle<TState>> {
     private process;
