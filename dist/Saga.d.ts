@@ -12,7 +12,7 @@ export declare class Saga<TState> extends Subject<StateActionBundle<TState>> {
     constructor(proc: () => Iterator<any>);
     setProcess(proc: () => Iterator<any>): this;
     executeEffect(effect: TEffectBase & any): Promise<any>;
-    evaluateYield(yielded: IteratorResult<any>, callback: (res?: any, err?: any) => void): this;
+    evaluateYield(yielded: IteratorResult<any>, nextYield: (res?: any, err?: any) => void): this;
     next(value: any): void;
     nextYield(res?: any, err?: any): this;
     run(): this;

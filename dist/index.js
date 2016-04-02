@@ -5,3 +5,4 @@ function __export(m) {
 /** Created by ge on 12/4/15. */
 __export(require("./Saga"));
 __export(require("./effects/effectsHelpers"));
+__export(require("./util/isCallback"));

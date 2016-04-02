@@ -1,4 +1,5 @@
 "use strict";
+const isCallback_1 = require("./util/isCallback");
 const isPromise_1 = require("./util/isPromise");
 const isAction_1 = require("./util/isAction");
 const isEffect_1 = require("./effects/isEffect");
@@ -7,6 +8,8 @@ const rxjs_1 = require("rxjs");
 const isUndefined_1 = require("./util/isUndefined");
 require("setimmediate"); // refer to https://github.com/YuzuJS/setImmediate/issues/48
 const effectsHelpers_1 = require("./effects/effectsHelpers");
+const isCallback_2 = require("./util/isCallback");
+const isNull_1 = require("./util/isNull");
 class Saga extends rxjs_1.Subject {
     constructor(proc) {
         super(); // replay just no past event, just broadcase new ones.
@@ -43,7 +46,7 @@ class Saga extends rxjs_1.Subject {
             return Promise.reject(`executeEffect Error: effect is not found ${JSON.stringify(effect)}`);
         }
     }
-    evaluateYield(yielded, callback) {
+    evaluateYield(yielded, nextYield) {
         this.log$.next(yielded.value);
         var isSynchronous = true;
         if (isUndefined_1.isUndefined(yielded.value)) {
@@ -51,21 +54,41 @@ class Saga extends rxjs_1.Subject {
         else if (isFunction_1.isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
         }
+        else if (isCallback_1.isCallback(yielded.value)) {
+            isSynchronous = false;
+            // no need to save the yielded result.
+            this.log$.next(isCallback_2.CALLBACK_START);
+            this.process.next((err, res) => {
+                if (err) {
+                    this.log$.next(isCallback_2.CallbackThrow(err));
+                }
+                else {
+                    this.log$.next(isCallback_2.CallbackReturn(res));
+                }
+                setImmediate(() => {
+                    nextYield(res, err);
+                });
+            });
+        }
         else if (isPromise_1.isPromise(yielded.value)) {
             isSynchronous = false;
             let p = yielded.value;
             p.then((res) => {
-                callback(res);
+                setImmediate(function () {
+                    nextYield(res);
+                });
             }, (err) => {
-                callback(null, err);
+                setImmediate(function () {
+                    nextYield(null, err);
+                });
             });
         }
         else if (isEffect_1.isEffect(yielded.value)) {
             isSynchronous = false;
-            let p = this.executeEffect(yielded.value).then((res) => {
-                callback(res);
-            }, (err) => {
-                callback(null, err);
+            let p = this.executeEffect(yielded.value).then(function (res) {
+                nextYield(res);
+            }, function (err) {
+                nextYield(null, err);
             });
         }
         else if (isAction_1.isAction(yielded.value)) {
@@ -79,7 +102,7 @@ class Saga extends rxjs_1.Subject {
          */
         if (isSynchronous)
             setImmediate(() => {
-                callback(yielded.value);
+                nextYield(yielded.value);
             });
         return this;
     }
@@ -89,7 +112,7 @@ class Saga extends rxjs_1.Subject {
     }
     nextYield(res, err) {
         let yielded;
-        if (typeof err !== "undefined") {
+        if (typeof err !== "undefined" && !isNull_1.isNull(err)) {
             yielded = this.process.throw(err);
         }
         else {
