@@ -162,6 +162,7 @@ The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna
 ## Todo (and Progress):
 
 1. [x] generator spawning and test => `new Saga(proc)`
+2. [x] ==NEW!== double yield syntax for standard "error-first" callback function.
 2. [x] `take` effect
 3. [x] `dispatch` (replace name `put`) effect 
 3. [x] `call` effect 
@@ -178,42 +179,93 @@ The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna
 
 These special functions are implemented following the API documentasion of `redux-saga`. You can look at the details [here](http://yelouafi.github.io/redux-saga/docs/api/index.html). Below is the documentation for `luna-saga`.
 
-### Saga Effects: `take`, `put`, `call`, `apply`, `cps`, `fork`, `join`, `cancel`, `select`
+### Saga Effects: `callback`, `take`, `put`, `call`, `apply`, `cps`, `fork`, `join`, `cancel`, `select`
 
 Effect is short for **side-effect**. `luna-saga`'s effect collection allows you to write things synchronously while keeping the generators pure. These side-effect functions merely produce a side-effect object, which is then processed by `saga` internally to do the correct thing.
 
-Below is the test for redux-saga. You can look at what is happening here to understand how they work.
-
+Below is the test for `luna-saga`. You can look at what is happening here to understand how they work.
 
 ```typescript
 function* idMaker():Iterator<any> {
     let update:any;
+    
+    `take` halts the action and wait for an action of particular type.
     update = yield take("INC");
-    console.log('1 *****', update);
     expect(update).toEqual({state: {number: 1}, action: {type: "INC"}});
-    // can test NOOP actions without getting hangup
+    
+    // it can be a NOOP action with note state update.
     update = yield dispatch({type: "NOOP"});
-    console.log('2 *****', update);
     expect(update).toEqual({state: {number: 1}, action: {type: "NOOP"}});
+    
+    // it can execute a function
     update = yield call(()=> "returned value");
-    console.log('3 *****', update);
     expect(update).toEqual("returned value");
+    
+    // it can execute a function with a particular context (for `this`)
     update = yield call([{color: "red"}, function (flower:any) {
         return `${flower} is ${this.color}`
     }], "rose");
     expect(update).toBe('rose is red');
+    
+    // `apply` is an alias for call with a different signature
     update = yield apply({color: "blue"}, function (thing:any) {
         return `${thing} is ${this.color}`
     }, "sky");
     expect(update).toBe('sky is blue');
+    
+    // you can query the store state with `select`.
     let state:any;
     state = yield select();
     expect(state).toEqual({number: 1});
     state = yield select("number");
     expect(state).toBe(1);
+    
+    // we end the test here.
     yield done;
 }
 ```
+
+#### **NEW!!** NodeJs "Error-first" Callback Function with Yield-Yield syntax!
+
+Have you ever wanted to use the `node.js` kind of "error first" callback syntax to write your code? With `luna-saga`, you can. Below is what happens when you run a simple generator in node and pass `yield "something"` in place of the actual callback function:
+
+```javascript
+let asyncFn = (cb) => {
+    cb("[async result]");
+    return "==> asyncFn return <==";
+};
+
+function* gen() {
+    result = yield asyncFn(yield "please give me callback"); // this is where you ask for a callback function.
+    expect(result).toBe("[async result]");
+}
+
+// now let's run this!!!
+let it = gen();
+
+let result = it.next(); // yield the first yield inside the async function
+expect(result.value).toBe('please give me callback');
+
+let callbackResult;
+result = it.next((res)=>{callbackResult = res;});// now pass in the callback function
+result = it.next(callbackResult); // now yield the second yield, and this is where we return the callback result
+expect(result.done).toBe(true);
+```
+
+To use this syntax, just import `callback` token from `luna-saga`. It will generate a `@@luna-saga/CALLBACK` type object, and get intercepted by the `luna-saga` effect executer.
+
+```javascript
+import {callback} from "luna-saga";
+
+function* authenticationProcess() {
+    try {
+        user = yield mongo.findOne({username: "Ge Yang"}).exec(yield callback);
+    } catch (error) {
+        console.log(error);
+    }
+```
+isn't this fantastic?
+
 
 #### `take(ACTION_TYPE) yield {state, action}`
 

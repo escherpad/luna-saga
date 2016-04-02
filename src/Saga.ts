@@ -1,5 +1,6 @@
 /** Created by ge on 12/4/15. */
 import {Action, Thunk, Reducer, Hash, StateActionBundle} from "luna";
+import {isCallback} from "./util/isCallback";
 import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
@@ -15,6 +16,8 @@ import {
     ITakeEffect, IDispatchEffect, ICallEffect, ISelectEffect,
     takeHandler, dispatchHandler, callHandler, selectHandler
 } from "./effects/effectsHelpers";
+import {CALLBACK_START, CallbackReturn, CallbackThrow} from "./util/isCallback";
+import {isNull} from "./util/isNull";
 
 export class Saga<TState> extends Subject<StateActionBundle<TState>> {
     private process:Iterator<any>;
@@ -56,7 +59,7 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
         }
     }
 
-    evaluateYield(yielded:IteratorResult<any>, callback:(res?:any, err?:any)=>void) {
+    evaluateYield(yielded:IteratorResult<any>, nextYield:(res?:any, err?:any)=>void) {
         this.log$.next(yielded.value);
         var isSynchronous = true;
         if (isUndefined(yielded.value)) {
@@ -64,25 +67,43 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
             // we can pass back a callback function if we want.
         } else if (isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
+        } else if (isCallback(yielded.value)) {
+            isSynchronous = false;
+            // no need to save the yielded result.
+            this.log$.next(CALLBACK_START);
+            this.process.next((err:any, res:any)=> {
+                if (err) {
+                    this.log$.next(CallbackThrow(err));
+                } else {
+                    this.log$.next(CallbackReturn(res));
+                }
+                setImmediate(():void=> {
+                    nextYield(res, err)
+                });
+            });
         } else if (isPromise(yielded.value)) {
             isSynchronous = false;
             let p = yielded.value;
             p.then(
                 (res:any):void => {
-                    callback(res);
+                    setImmediate(function ():void {
+                        nextYield(res);
+                    });
                 },
                 (err:any):void => {
-                    callback(null, err);
+                    setImmediate(function ():void {
+                        nextYield(null, err);
+                    });
                 }
             )
         } else if (isEffect(yielded.value)) {
             isSynchronous = false;
             let p = this.executeEffect(yielded.value).then(
-                (res:any):void => {
-                    callback(res);
+                function (res:any):void {
+                    nextYield(res);
                 },
-                (err:any):void => {
-                    callback(null, err);
+                function (err:any):void {
+                    nextYield(null, err);
                 }
             );
         } else if (isAction(yielded.value)) {
@@ -95,7 +116,7 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
          * setImmediate cross-platform package: 0.120 s. fantastic.
          */
         if (isSynchronous) setImmediate(():void=> {
-            callback(yielded.value)
+            nextYield(yielded.value)
         });
         return this;
     }
@@ -107,7 +128,7 @@ export class Saga<TState> extends Subject<StateActionBundle<TState>> {
 
     nextYield(res?:any, err?:any) {
         let yielded:IteratorResult<any>;
-        if (typeof err !== "undefined") {
+        if (typeof err !== "undefined" && !isNull(err)) {
             yielded = this.process.throw(err);
         } else {
             yielded = this.process.next(res);
