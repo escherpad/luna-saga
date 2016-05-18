@@ -39,10 +39,10 @@
   "author": "Ge Yang <yangge1987@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "lodash.isplainobject": "^4.0.4",
     "setimmediate": "^1.0.4"
   },
   "peerDependencies": {
-    "lodash": "^4.0.4",
     "luna": "^1.2.0",
     "rxjs": "^5.0.0-alpha.14"
   },
