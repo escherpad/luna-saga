@@ -134,7 +134,7 @@ npm install luna-saga@git+https://git@github.com/escherpad/luna-saga.git
 let saga = new Saga(processGenerator).run();
 
 // store$ is your luna rxjs store
-store$.subscribe(saga)
+store$.update$.subscribe(saga)
 
 saga.action$.subscribe((action:TestAction)=>store$.dispatch(action));
 saga.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
