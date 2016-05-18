@@ -301,7 +301,7 @@ let data = yield select("number") // 1
 ## Developing Luna-Saga
 
 - you need to have `karma-cli` installed globally. (do `npm install -g karma-cli`)
-- to build, run `npm run build`. This just calls `tsc` in project root.
+- to build, run `npm run clean-build`. This calls `clean` and `build:tsc`, the latter calls `tsc` in project root.
 - to test, you can use `karma start`. I use webStorm's karma integration to run the tests.
 
 Work In Progress Below This Line

@@ -33,23 +33,23 @@
     "test": "karma start",
     "clean": "rimraf dist",
     "build:src": "tsc",
-    "build": "npm run clean && npm run build:src",
+    "clean-build": "npm run clean && npm run build:src",
     "publish-patch": "npm run build && git add . && git commit -m 'BUILD' && git push && npm version patch && npm publish"
   },
   "author": "Ge Yang <yangge1987@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "lodash.isplainobject": "^4.0.4",
     "setimmediate": "^1.0.4"
   },
   "peerDependencies": {
+    "lodash": "^4.0.4",
     "luna": "^1.2.0",
     "rxjs": "^5.0.0-alpha.14"
   },
   "devDependencies": {
-    "es6-shim": "^0.35.0",
     "awesome-typescript-loader": "^0.15.9",
     "browserify": "^12.0.1",
+    "es6-shim": "^0.35.0",
     "jasmine-core": "^2.4.1",
     "karma": "^0.13.22",
     "karma-browserify": "^4.4.2",
@@ -62,7 +62,7 @@
     "sourcemap": "^0.1.0",
     "ts-loader": "^0.7.2",
     "tsify": "^0.13.1",
-    "typescript": "^1.7.3",
+    "typescript": "^1.8.10",
     "typings": "^0.7.9",
     "webpack": "^1.12.14"
   }

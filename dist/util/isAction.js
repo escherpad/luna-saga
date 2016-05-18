@@ -1,9 +1,7 @@
 "use strict";
 /** Created by ge on 3/27/16. */
-//import isPlainObject from "lodash/isPlainObject";
-const _ = require("lodash");
-var isPlainObject = _.isPlainObject;
+const lodash_1 = require("lodash");
 function isAction(obj) {
-    return (typeof obj.type !== "undefined" && _.isPlainObject(obj) && !obj.__isNotAction);
+    return (typeof obj.type !== "undefined" && lodash_1.isPlainObject(obj) && !obj.__isNotAction);
 }
 exports.isAction = isAction;
