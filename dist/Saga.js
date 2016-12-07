@@ -138,4 +138,5 @@ class Saga extends rxjs_1.Subject {
         this.thunk$.complete();
     }
 }
-exports.Saga = Saga;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = Saga;

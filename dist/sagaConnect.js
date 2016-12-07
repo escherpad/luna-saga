@@ -1,7 +1,7 @@
 "use strict";
 const Saga_1 = require("./Saga");
 function sagaConnect(store$, generator, immediate) {
-    let process = new Saga_1.Saga(generator);
+    let process = new Saga_1.default(generator);
     store$.update$.subscribe(process);
     process.thunk$.subscribe((_t) => store$.dispatch(_t));
     process.action$.subscribe((_a) => store$.dispatch(_a));
@@ -9,5 +9,4 @@ function sagaConnect(store$, generator, immediate) {
         process.run();
     return process;
 }
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = sagaConnect;
+exports.sagaConnect = sagaConnect;
