@@ -42,7 +42,7 @@ describe("store thread schedule", function () {
             name: stringReducer
         };
 
-        function* proc() {
+        function* proc():Iterator<any> {
             yield {type: 'INC'};
         }
 
@@ -53,13 +53,14 @@ describe("store thread schedule", function () {
         saga$.action$.subscribe((action:TestAction)=>store$.dispatch(action));
         saga$.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
 
-
-
         var firstAction:TestAction;
         store$.action$.subscribe(action=> {
             firstAction = action;
         });
-        expect(firstAction).toBe(INIT_STORE_ACTION);
+        /** you can not capture the INIT_STORE action,
+         * because the <store>.action$ stream is HOT
+         * and the initialization happens synchronously.
+         * removed: expect(firstAction).toBe(INIT_STORE_ACTION); */
         expect(store$.value).toEqual({counter: 0, name: ""});
 
         store$.subscribe(
