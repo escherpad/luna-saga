@@ -19,7 +19,7 @@ import {
 import {CALLBACK_START, CallbackReturn, CallbackThrow} from "./util/isCallback";
 import {isNull} from "./util/isNull";
 
-export class Saga<TState> extends Subject<StateActionBundle<TState>> {
+export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
     private process:Iterator<any>;
     public replay$:ReplaySubject<StateActionBundle<TState>>;
     public log$:Subject<any>;

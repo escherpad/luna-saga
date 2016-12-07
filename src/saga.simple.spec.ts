@@ -4,7 +4,7 @@ import {isPromise} from "rxjs/util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
 import {Subject} from "rxjs";
-import {Saga} from "./Saga";
+import Saga from "./Saga";
 import {Action} from "luna";
 import {CALLBACK} from "./util/isCallback";
 interface TestAction extends Action {

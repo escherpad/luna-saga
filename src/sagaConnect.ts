@@ -1,9 +1,9 @@
 /** Created by ge on 12/6/16. */
 import {TSaga} from "./interfaces";
-import {Saga} from "./Saga";
+import Saga from "./Saga";
 import {Store, Thunk, Action} from "luna";
 
-function sagaConnect<TState>(store$: Store<TState>,
+export function sagaConnect<TState>(store$: Store<TState>,
                              generator: ()=>Iterator<any>,
                              immediate?: boolean): Saga<TState> {
     let process = new Saga<TState>(generator);
@@ -13,4 +13,3 @@ function sagaConnect<TState>(store$: Store<TState>,
     if (immediate) process.run();
     return process;
 }
-export default sagaConnect;

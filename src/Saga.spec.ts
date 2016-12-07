@@ -1,6 +1,6 @@
 /** Created by ge on 3/27/16. */
 /* so that this show up as a module */
-import {Saga} from "./Saga";
+import Saga from "./Saga";
 export default {};
 
 /** Created by ge on 12/6/15. */

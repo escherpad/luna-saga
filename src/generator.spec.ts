@@ -1,10 +1,4 @@
 /** Created by ge on 3/27/16. */
-import {isPromise} from "rxjs/util/isPromise";
-import {isAction} from "./util/isAction";
-import {isEffect} from "./effects/isEffect";
-import {Subject} from "rxjs";
-import {Saga} from "./Saga";
-
 
 describe("generator syntax", function () {
     it("should work with loader and webpack", function () {

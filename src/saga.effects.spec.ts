@@ -1,5 +1,5 @@
 /** Created by ge on 3/27/16. */
-import {Saga} from "./Saga";
+import Saga from "./Saga";
 import {Action} from "luna";
 import {take, dispatch, call, apply, select} from "./effects/effectsHelpers";
 import {Observable} from "rxjs/Observable";
