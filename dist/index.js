@@ -6,3 +6,4 @@ function __export(m) {
 __export(require("./Saga"));
 __export(require("./effects/effectsHelpers"));
 __export(require("./util/isCallback"));
+__export(require("./sagaConnect"));

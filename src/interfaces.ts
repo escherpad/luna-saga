@@ -3,7 +3,8 @@ import {Action, Thunk} from "luna";
 import {Subject, ReplaySubject} from "rxjs";
 
 export interface TSaga<T> extends Subject<T> {
-    replay$:ReplaySubject<T>;
-    thunk$:Subject<Thunk>;
-    action$:Subject<Action>;
+    replay$: ReplaySubject<T>;
+    thunk$: Subject<Thunk>;
+    action$: Subject<Action>;
+    run: ()=>void;
 }
