@@ -1,3 +1,5 @@
 declare module "lodash.isplainobject" {
-    export default function isPlainObject (value?:any):boolean
+    function isPlainObject(value?: any): boolean
+
+    export = isPlainObject;
 }
