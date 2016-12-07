@@ -1,6 +1,6 @@
 {
   "name": "luna-saga",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "a saga middleware for luna",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
