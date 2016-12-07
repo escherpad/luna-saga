@@ -39,7 +39,7 @@
   "author": "Ge Yang <yangge1987@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "lodash.isplainobject": "^4.0.4",
+    "lodash.isplainobject": "^4.0.6",
     "setimmediate": "^1.0.4"
   },
   "peerDependencies": {
