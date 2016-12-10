@@ -122,9 +122,7 @@ export function selectHandler<T extends StateActionBundle<any>>(effect: ISelectE
     let selector = effect.selector;
     return new Promise((resolve, reject)=> {
         let isResolved = false;
-        /* the actions should be synchronous, however race condition need to be tested. */
-        /** todo: take(1) at the beginning before any update happens causes select effect hang
-         until an update$ is received. #issue */
+        /** DONE: to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle. */
         _this.replay$.take(1)
             .map((update: StateActionBundle<any>): any=> {
                 if (typeof selector === "undefined") {
