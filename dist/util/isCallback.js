@@ -1,7 +1,7 @@
 "use strict";
 /** Created by ge on 4/1/16. */
-const Sym_1 = require("./Sym");
-const $CALLBACK = Sym_1.Sym("CALLBACK");
+var Sym_1 = require("./Sym");
+var $CALLBACK = Sym_1.Sym("CALLBACK");
 exports.$CALLBACK_START = Sym_1.Sym("$CALLBACK_START");
 exports.$CALLBACK_RETURN = Sym_1.Sym("$CALLBACK_RETURN");
 exports.$CALLBACK_THROW = Sym_1.Sym("$CALLBACK_THROW");

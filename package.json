@@ -63,7 +63,7 @@
     "ts-loader": "^0.7.2",
     "tsify": "^0.13.1",
     "typescript": "^1.8.10",
-    "typings": "^0.7.9",
+    "typings": "^2.0.0",
     "webpack": "^1.12.14"
   }
 }

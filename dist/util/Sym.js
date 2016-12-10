@@ -1,2 +1,2 @@
 "use strict";
-exports.Sym = (id) => `@@luna-saga/${id}`;
+exports.Sym = function (id) { return ("@@luna-saga/" + id); };
