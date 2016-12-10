@@ -7,26 +7,27 @@ import {queue} from "rxjs/scheduler/queue";
 import {Store} from "luna/dist/index";
 import {Reducer} from "luna/dist/index";
 import {delay} from "./helpers";
+import {SAGA_CONNECT_ACTION} from "./sagaConnect";
 
 interface TestState {
-    number:number;
+    number: number;
 }
 interface TestAction extends Action {
-    payload?:any;
+    payload?: any;
 }
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
 
 describe("Effects", function () {
-    it("take effect allow yield on a certain type of actions", function (done:()=>void) {
+    it("take effect allow yield on a certain type of actions", function (done: ()=>void) {
 
-        function thunk():()=>Action {
+        function thunk(): ()=>Action {
             return () => {
                 return {type: "DEC"};
             }
         }
 
-        function* idMaker():Iterator<any> {
-            let update:any;
+        function* idMaker(): Iterator<any> {
+            let update: any;
             update = yield take("INC");
             console.log('1 *****', update);
             expect(update).toEqual({state: {number: 1}, action: {type: "INC"}});
@@ -39,15 +40,15 @@ describe("Effects", function () {
             // now delay:
             yield call(delay, 500);
             expect(update).toEqual("returned value");
-            update = yield call([{color: "red"}, function (flower:any) {
+            update = yield call([{color: "red"}, function (flower: any) {
                 return `${flower} is ${this.color}`
             }], "rose");
             expect(update).toBe('rose is red');
-            update = yield apply({color: "blue"}, function (thing:any) {
+            update = yield apply({color: "blue"}, function (thing: any) {
                 return `${thing} is ${this.color}`
             }, "sky");
             expect(update).toBe('sky is blue');
-            let state:any;
+            let state: any;
             state = yield select();
             expect(state).toEqual({number: 1});
             state = yield select("number");
@@ -56,9 +57,15 @@ describe("Effects", function () {
         }
 
         let saga = new Saga<TestState>(idMaker);
-        let testActions = [{type: "INIT_STORE"}, {type: "INC"}, {type: "random"}, {type: "another random action"}, {type: "NOOP"}];
+        let testActions = [
+            {type: "INIT_STORE"},
+            {type: "INC"},
+            {type: "random"},
+            {type: "another random action"},
+            {type: "NOOP"}
+        ];
         // building the test store
-        let counterReducer = <Reducer>function <Number>(state:number = 0, action:TestAction):number {
+        let counterReducer = <Reducer>function <Number>(state: number = 0, action: TestAction): number {
             if (action.type === "INC") {
                 return state + 1;
             } else if (action.type === "DEC") {
@@ -70,17 +77,17 @@ describe("Effects", function () {
         let store$ = new Store({number: counterReducer});
         // subscribe the saga to the store (state,action) bundle
         store$.update$.subscribe(saga);
-        saga.action$.subscribe((_:any)=> {
+        saga.action$.subscribe((_: any)=> {
             console.log("action: ", _);
             store$.dispatch(_);
         });
-        saga.thunk$.subscribe((_:any)=> {
+        saga.thunk$.subscribe((_: any)=> {
             console.log("thunk: ", _);
             store$.dispatch(_);
         });
         saga.log$.subscribe(
-            (_:any)=>console.log("log: ", _),
-            (err:any)=>console.log("saga error: ", err)
+            (_: any)=>console.log("log: ", _),
+            (err: any)=>console.log("saga error: ", err)
         );
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
@@ -91,6 +98,58 @@ describe("Effects", function () {
         store$.dispatch(testActions[3]);
         store$.dispatch(testActions[4]);
         store$.dispatch(testActions[4]);
+    });
+
+    it("test select effect corner cases", function (done: ()=>void) {
+
+        function* idMaker(): Iterator<any> {
+            let numberState: any;
+            // as long as a synthesized SAGA_CONNECT event is emitted with state value
+            // the select effect would have the state already populated in the replay
+            // subject. [^reference](./sagaConnect.ts:L19)
+            numberState = yield select("number");
+            console.log('4 *****', numberState);
+            expect(numberState).toEqual(0);
+            numberState = yield select("number");
+            console.log('5 *****', numberState);
+            expect(numberState).toEqual(0);
+            numberState = yield select("number");
+            console.log('6 *****', numberState);
+            expect(numberState).toEqual(0);
+            yield done;
+        }
+
+        let saga = new Saga<TestState>(idMaker);
+
+        // building the test store
+        let counterReducer = <Reducer>function <Number>(state: number = 0, action: TestAction): number {
+            if (action.type === "INC") {
+                return state + 1;
+            } else if (action.type === "DEC") {
+                return state - 1;
+            } else {
+                return state;
+            }
+        };
+        let store$ = new Store({number: counterReducer});
+        // subscribe the saga to the store (state,action) bundle
+        store$.update$.subscribe(saga);
+        saga.action$.subscribe((_: any)=> {
+            console.log("action: ", _);
+            store$.dispatch(_);
+        });
+        saga.thunk$.subscribe((_: any)=> {
+            console.log("thunk: ", _);
+            store$.dispatch(_);
+        });
+        saga.log$.subscribe(
+            (_: any)=>console.log("log: ", _),
+            (err: any)=>console.log("saga error: ", err)
+        );
+        /* run saga before subscription to states$ in this synchronous case. */
+        saga.run();
+        saga.next({state: store$.getValue(), action: SAGA_CONNECT_ACTION});
+
     });
 });
 

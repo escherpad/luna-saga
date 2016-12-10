@@ -5,28 +5,28 @@ import {Action, StateActionBundle} from "luna";
 import {Subject} from "rxjs";
 import {TSaga} from "../interfaces";
 
-export const EFFECT:TSym = Sym("EFFECT");
+export const EFFECT: TSym = Sym("EFFECT");
 
 export interface ITakeEffect extends TEffectBase {
-    actionType:any;
+    actionType: any;
 }
 
-export const TAKE:TSym = Sym("TAKE");
+export const TAKE: TSym = Sym("TAKE");
 
-export function take(actionType:any):ITakeEffect {
+export function take(actionType: any): ITakeEffect {
     return {type: TAKE, actionType};
 }
 
-export function takeHandler<T extends StateActionBundle<any>>(effect:ITakeEffect, _this:Subject<T>):Promise<any> {
+export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffect, _this: Subject<T>): Promise<any> {
     return new Promise((resolve, reject)=> {
         let isResolved = false;
         _this
-            .first((saga:T):boolean=> (saga.action.type && saga.action.type === effect.actionType))
+            .first((saga: T): boolean=> (saga.action.type && saga.action.type === effect.actionType))
             .subscribe(
-                (saga:T)=> {
+                (saga: T)=> {
                     isResolved = true;
                     resolve(saga);
-                }, (err:any)=> {
+                }, (err: any)=> {
                     isResolved = true;
                     reject(err);
                 }, ()=> {
@@ -36,21 +36,21 @@ export function takeHandler<T extends StateActionBundle<any>>(effect:ITakeEffect
 }
 
 export interface IDispatchEffect extends TEffectBase {
-    action:Action;
+    action: Action;
 }
-export const DISPATCH:TSym = Sym("DISPATCH");
+export const DISPATCH: TSym = Sym("DISPATCH");
 
-export function dispatch(action:Action):IDispatchEffect {
+export function dispatch(action: Action): IDispatchEffect {
     return {type: DISPATCH, action};
 }
 
-export function dispatchHandler<T extends StateActionBundle<any>>(effect:IDispatchEffect, _this:TSaga<T>):Promise<any> {
+export function dispatchHandler<T extends StateActionBundle<any>>(effect: IDispatchEffect, _this: TSaga<T>): Promise<any> {
     return new Promise((resolve, reject)=> {
         let isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
         _this.take(1)
             .subscribe(
-                (saga:T)=> {
+                (saga: T)=> {
                     isResolved = true;
                     if (saga.action.type !== effect.action.type) { // + action id to make sure.
                         reject(`dispatch effect race condition error: ${JSON.stringify(saga.action)}, ${JSON.stringify(effect.action)}`);
@@ -58,7 +58,7 @@ export function dispatchHandler<T extends StateActionBundle<any>>(effect:IDispat
                         resolve(saga)
                     }
                 },
-                (err:any)=> {
+                (err: any)=> {
                     isResolved = true;
                     reject(err);
                 },
@@ -72,14 +72,14 @@ export function dispatchHandler<T extends StateActionBundle<any>>(effect:IDispat
 }
 
 export interface ICallEffect extends TEffectBase {
-    context?:any;
-    fn:any;
+    context?: any;
+    fn: any;
     args?: Array<any>
 }
-export const CALL:TSym = Sym("CALL");
+export const CALL: TSym = Sym("CALL");
 
-export function call(fn:any, ...args:any[]):ICallEffect {
-    var context:any;
+export function call(fn: any, ...args: any[]): ICallEffect {
+    var context: any;
     if (typeof fn === 'function') {
         return {type: CALL, fn, args};
     } else {
@@ -87,10 +87,10 @@ export function call(fn:any, ...args:any[]):ICallEffect {
         return {type: CALL, fn, args, context};
     }
 }
-export function callHandler<T extends StateActionBundle<any>>(effect:ICallEffect, _this:Subject<T>):Promise<any> {
+export function callHandler<T extends StateActionBundle<any>>(effect: ICallEffect, _this: Subject<T>): Promise<any> {
     let {fn, args, context} = effect;
     try {
-        let result:any = fn.apply(context, args);
+        let result: any = fn.apply(context, args);
         return Promise.resolve(result);
     } catch (e) {
         return Promise.reject(e);
@@ -98,7 +98,7 @@ export function callHandler<T extends StateActionBundle<any>>(effect:ICallEffect
 }
 
 /* apply is call's alias with context */
-export function apply(context:any, fn:any, ...args:any[]):ICallEffect {
+export function apply(context: any, fn: any, ...args: any[]): ICallEffect {
     return {type: CALL, fn, args, context};
 }
 
@@ -110,35 +110,35 @@ export function apply(context:any, fn:any, ...args:any[]):ICallEffect {
 //todo: cancel(task)
 
 export interface ISelectEffect extends TEffectBase {
-    selector?:string;
+    selector?: string;
 }
-export const SELECT:TSym = Sym("SELECT");
+export const SELECT: TSym = Sym("SELECT");
 
-export function select(selector?:string):ISelectEffect {
+export function select(selector?: string): ISelectEffect {
     return {type: SELECT, selector};
 }
 
-export function selectHandler<T extends StateActionBundle<any>>(effect:ISelectEffect, _this:TSaga<T>):Promise<any> {
+export function selectHandler<T extends StateActionBundle<any>>(effect: ISelectEffect, _this: TSaga<T>): Promise<any> {
     let selector = effect.selector;
     return new Promise((resolve, reject)=> {
         let isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
-        /** todo: take(1) at the begining before any update happens causes select effect hang
-           until an update$ is received. #issue */
+        /** todo: take(1) at the beginning before any update happens causes select effect hang
+         until an update$ is received. #issue */
         _this.replay$.take(1)
-            .map((update:StateActionBundle<any>):any=> {
+            .map((update: StateActionBundle<any>): any=> {
                 if (typeof selector === "undefined") {
                     return update.state;
-                }else if (typeof selector === "string") {
+                } else if (typeof selector === "string") {
                     return update.state[selector]
                 }
             })
             .subscribe(
-                (value:any)=> {
+                (value: any)=> {
                     isResolved = true;
                     resolve(value)
                 },
-                (err:any)=> {
+                (err: any)=> {
                     isResolved = true;
                     reject(err);
                 },
