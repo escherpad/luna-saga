@@ -306,8 +306,52 @@ function* yourProcess(){
 returns a selected part of the store state. If selector is undefined, select returns the entire store state.
 
 ```javascript
+// simple example
 let data = yield select() // <entire store>
 let data = yield select("number") // 1
+```
+
+**Important Note**: the `store$.update$` stream is a Publish Subject instead of a Behavior Subject.
+This means that the subscriber does not receive current state on subscription.
+
+this is implemented on purpose to prevent the saga from always getting a stale `{state, action}` bundle on connection.
+
+To solve this problem, we implemented in the `sagaConnect` helper function, to synthetically emit
+a action with action type: `SAGA_CONNECT_ACTION`. This action is not passed to the store, but can 
+be used by the SAGA process to recognize the bundle as a connection event. 
+
+In addition, it allows effects such as `select` and `dispatch` to obtain an update-to-date copy
+of the store state upon connection. Without this connection update, the `update$.take(1)` stream
+would not be populated, and the Saga would not run.
+
+```javascript
+var store$ = new Store(reducer, {number: 0});
+function* proc(){
+    let n = yield select('number');
+    console.log("number is: ", n);
+    var state = yield select();
+    console.log(" connection event triggers all subsequent select effects:\n 2nd select");
+    state = yield select();
+    console.log(" 3rd select");
+}
+var saga = new Saga(proc);
+
+// this would not run:
+store$.update$.subscribe(saga);
+saga.run(); // generator hangs forever
+
+// this would:
+store$.update$.subscribe(saga);
+saga.run(); // generator hangs forever
+
+saga.next({
+    state: store$.getValue(), 
+    action: {type: SAGA_CONNECT_ACTION}
+});
+// number is: 0
+// connection event triggers all subsequent select effects:
+// 2rd select
+// 3rd select
 ```
 
 ## Developing Luna-Saga
