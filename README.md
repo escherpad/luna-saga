@@ -161,6 +161,11 @@ The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna
 
 ## Todo (and Progress):
 
+4. [ ] `takeEvery` helper
+5. [ ] `takeLast` helper
+6. [ ] ... many other effects
+7. [ ] `race` flow controller
+8. [ ] `parallel` flow controller
 1. [x] generator spawning and test => `new Saga(proc)`
 2. [x] ==NEW!== double yield syntax for standard "error-first" callback function.
 2. [x] `take` effect
@@ -168,11 +173,7 @@ The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna
 3. [x] `call` effect 
 3. [x] `apply` effect (`call` alias)
 3. [x] `select` effect 
-4. [ ] `takeEvery` helper
-5. [ ] `takeLast` helper
-6. [ ] ... many other effects
-7. [ ] `race` flow controller
-8. [ ] `parallel` flow controller
+4. [x] `delay` helper function
 
 
 ## Saga Helpers, Effects, and Flow helpers (Updated Below!)
@@ -288,6 +289,17 @@ let update = yield dispatch(<your_action_>);
 #### `call(fn[, args]) yield <return from fn>`, `call([context, fn][, args])` and `apply(context, fn[, args])`
 
 I didn't really see a huge need for these but I implemented them anyways. You can yield functions directly without using side effect. However these are useful when you want to run object methods.
+
+**update**: now the delay function is implemented with this call effect!
+##### Example usage:
+```javascript
+import {delay} from "luna-saga";
+
+function* yourProcess(){
+    yield call(delay, 500) // <= this lets the saga wait for 500 milliseconds)
+}
+```
+
 
 #### `select([selector:string]) return <selected part of state>`
 

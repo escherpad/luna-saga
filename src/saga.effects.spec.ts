@@ -6,6 +6,7 @@ import {Observable} from "rxjs/Observable";
 import {queue} from "rxjs/scheduler/queue";
 import {Store} from "luna/dist/index";
 import {Reducer} from "luna/dist/index";
+import {delay} from "./helpers";
 
 interface TestState {
     number:number;
@@ -35,6 +36,8 @@ describe("Effects", function () {
             expect(update).toEqual({state: {number: 1}, action: {type: "NOOP"}});
             update = yield call(()=> "returned value");
             console.log('3 *****', update);
+            // now delay:
+            yield call(delay, 500);
             expect(update).toEqual("returned value");
             update = yield call([{color: "red"}, function (flower:any) {
                 return `${flower} is ${this.color}`

@@ -102,7 +102,6 @@ export function apply(context:any, fn:any, ...args:any[]):ICallEffect {
     return {type: CALL, fn, args, context};
 }
 
-//todo: delay(ms)
 //todo: cps(fn, ...args)
 //todo: cps([context, fn], ...args)
 //todo: fork(fn, ...args)
