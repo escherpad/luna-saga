@@ -11,8 +11,7 @@
   },
   "files": [
     "src/index.ts",
-    "typings/main.d.ts",
-    "typings/globals/es6-shim/index.d.ts"
+    "typings/index.d.ts"
   ],
   "exclude": [
     "node_modules"
