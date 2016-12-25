@@ -1,6 +1,6 @@
 /** Created by ge on 3/27/16. */
 
-describe("generator syntax", function () {
+describe("generator.spec: Generator Example", function () {
     it("should work with loader and webpack", function () {
 
         function* idMaker():Iterator<any> {
@@ -30,7 +30,7 @@ describe("generator syntax", function () {
         };
 
         function* gen():Iterator<any> {
-            result = yield asyncFn(yield "please give me callback");
+            let result = yield asyncFn(yield "please give me callback");
             expect(result).toBe("[async result]");
         }
 

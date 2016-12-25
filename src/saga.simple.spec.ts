@@ -11,7 +11,7 @@ interface TestAction extends Action {
     payload?:any;
 }
 
-describe("generator syntax", function () {
+describe("saga.simple.spec: Promise Handling", function () {
     it("process runner should work", function (done:()=>void) {
         function Thunk():()=>Action {
             return () => {

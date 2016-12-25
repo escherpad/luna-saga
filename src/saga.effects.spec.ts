@@ -17,7 +17,7 @@ interface TestAction extends Action {
 }
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
 
-describe("Effects", function () {
+describe("saga.effects.spec", function () {
     it("take effect allow yield on a certain type of actions", function (done: ()=>void) {
 
         function thunk(): ()=>Action {

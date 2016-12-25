@@ -15,7 +15,7 @@ interface TState {
     name: string;
 }
 
-describe("store thread schedule", function () {
+describe("saga.spec: store thread schedule", function () {
     it("the dispatch calls should run in a different thread", function (done:()=>void) {
         let counterReducer = <Reducer>function <Number>(state:number = 0, action:TestAction):number {
             if (action.type === "INC") {
