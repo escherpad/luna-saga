@@ -4,6 +4,7 @@ import {TEffectBase} from "./interfaces";
 import {Action, StateActionBundle} from "luna";
 import {Subject} from "rxjs";
 import {TSaga} from "../interfaces";
+import {isArray} from "../util/isArray";
 
 export const EFFECT: TSym = Sym("EFFECT");
 
@@ -18,18 +19,26 @@ export function take(actionType: any): ITakeEffect {
 }
 
 export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffect, _this: Subject<T>): Promise<any> {
-    return new Promise((resolve, reject)=> {
+    return new Promise((resolve, reject) => {
         let isResolved = false;
         _this
-            .first((saga: T): boolean=> (saga.action.type && saga.action.type === effect.actionType))
+            .first((saga: T): boolean => {
+                if (!saga.action.type) {
+                    return false;
+                } else if (saga.action.type === effect.actionType) {
+                    return true;
+                } else if (isArray(effect.actionType)) {
+                    return effect.actionType.indexOf(saga.action.type) > -1;
+                } else return (typeof effect.actionType !== 'string' && !!saga.action.type.match(effect.actionType));
+            })
             .subscribe(
-                (saga: T)=> {
+                (saga: T) => {
                     isResolved = true;
                     resolve(saga);
-                }, (err: any)=> {
+                }, (err: any) => {
                     isResolved = true;
                     reject(err);
-                }, ()=> {
+                }, () => {
                     if (!isResolved) reject("take effect stream ended without finding match");
                 })
     })
@@ -45,12 +54,12 @@ export function dispatch(action: Action): IDispatchEffect {
 }
 
 export function dispatchHandler<T extends StateActionBundle<any>>(effect: IDispatchEffect, _this: TSaga<T>): Promise<any> {
-    return new Promise((resolve, reject)=> {
+    return new Promise((resolve, reject) => {
         let isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
         _this.take(1)
             .subscribe(
-                (saga: T)=> {
+                (saga: T) => {
                     isResolved = true;
                     if (saga.action.type !== effect.action.type) { // + action id to make sure.
                         reject(`dispatch effect race condition error: ${JSON.stringify(saga.action)}, ${JSON.stringify(effect.action)}`);
@@ -58,11 +67,11 @@ export function dispatchHandler<T extends StateActionBundle<any>>(effect: IDispa
                         resolve(saga)
                     }
                 },
-                (err: any)=> {
+                (err: any) => {
                     isResolved = true;
                     reject(err);
                 },
-                ()=> {
+                () => {
                     // can add flag <Effect>.noCompletionWarning
                     if (!isResolved) reject("dispatch effect stream ended without getting updated state");
                 }
@@ -120,11 +129,11 @@ export function select(selector?: string): ISelectEffect {
 
 export function selectHandler<T extends StateActionBundle<any>>(effect: ISelectEffect, _this: TSaga<T>): Promise<any> {
     let selector = effect.selector;
-    return new Promise((resolve, reject)=> {
+    return new Promise((resolve, reject) => {
         let isResolved = false;
         /** DONE: to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle. */
         _this.replay$.take(1)
-            .map((update: StateActionBundle<any>): any=> {
+            .map((update: StateActionBundle<any>): any => {
                 if (typeof selector === "undefined") {
                     return update.state;
                 } else if (typeof selector === "string") {
@@ -132,15 +141,15 @@ export function selectHandler<T extends StateActionBundle<any>>(effect: ISelectE
                 }
             })
             .subscribe(
-                (value: any)=> {
+                (value: any) => {
                     isResolved = true;
                     resolve(value)
                 },
-                (err: any)=> {
+                (err: any) => {
                     isResolved = true;
                     reject(err);
                 },
-                ()=> {
+                () => {
                     if (!isResolved) reject("dispatch effect stream ended without getting updated state");
                 }
             );
