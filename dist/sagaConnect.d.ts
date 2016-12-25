@@ -1,3 +1,4 @@
+/// <reference types="core-js" />
 /** Created by ge on 12/6/16. */
 import { Store } from "luna";
 import Saga from "./Saga";

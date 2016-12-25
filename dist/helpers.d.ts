@@ -1,3 +1,4 @@
+/// <reference types="core-js" />
 /**
  * Created by ge on 12/7/16.
  *

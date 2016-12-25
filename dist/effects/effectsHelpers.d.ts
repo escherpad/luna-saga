@@ -1,3 +1,4 @@
+/// <reference types="core-js" />
 /** Created by ge on 3/28/16. */
 import { TSym } from "../util/Sym";
 import { TEffectBase } from "./interfaces";

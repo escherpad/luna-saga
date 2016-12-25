@@ -122,7 +122,7 @@ var Saga = (function (_super) {
         var _this = this;
         var yielded;
         if (typeof err !== "undefined" && !isNull_1.isNull(err)) {
-            yielded = this.process.throw(err);
+            yielded = this.process["throw"](err);
         }
         else {
             yielded = this.process.next(res);
@@ -148,5 +148,5 @@ var Saga = (function (_super) {
     };
     return Saga;
 }(rxjs_1.Subject));
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = Saga;
+exports.__esModule = true;
+exports["default"] = Saga;

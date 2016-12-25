@@ -1,3 +1,4 @@
+/// <reference types="core-js" />
 /** Created by ge on 12/4/15. */
 import { StateActionBundle } from "luna";
 import { Subject, ReplaySubject } from "rxjs";
