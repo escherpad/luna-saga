@@ -34,7 +34,7 @@ describe("generator.spec: Generator Example", function () {
             expect(result).toBe("[async result]");
         }
 
-        var it:Iterator<any> = gen();
+        let it:Iterator<any> = gen();
         let result:any = it.next(); // yield the first yield inside the async function
         expect(result.value).toBe('please give me callback');
 

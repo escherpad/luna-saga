@@ -19,11 +19,11 @@ describe("saga.simple.spec: Promise Handling", function () {
             }
         }
 
-        function asyncFunction (cb:(err:any, res:any)=>void) {
+        function dummyAsyncFunc (cb:(err:any, res?:any)=>void) {
             cb(null, "** async RESULT **");
         }
 
-        function asyncFunctionWithError (cb:(err:any, res:any)=>void) {
+        function dummyAsyncFuncThrowingError (cb:(err:any, res?:any)=>void) {
             cb("** async ERROR **");
         }
 
@@ -43,13 +43,17 @@ describe("saga.simple.spec: Promise Handling", function () {
             let result = yield Thunk();
             expect(typeof result).toBe('function');
 
+            // **advanced**
             // you can use the yield-yield syntax with the CALLBACK token
-            result = yield asyncFunction(yield CALLBACK);
+            // Here the middleware intercepts the callback token, returns
+            // a callback function into the generator, which allows
+            // the async function to execute (the `dummyAsyncFunc`)
+            result = yield dummyAsyncFunc(yield CALLBACK);
             expect(result).toBe("** async RESULT **");
 
             // we can catch error synchronously in the callback
             try {
-                result = yield asyncFunctionWithError(yield CALLBACK);
+                result = yield dummyAsyncFuncThrowingError(yield CALLBACK);
             } catch (err) {
                 expect(err).toBe("** async ERROR **");
             }
