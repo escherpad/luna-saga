@@ -6,14 +6,20 @@ import {Sym, TSym} from "./util/Sym";
 export const SAGA_CONNECT_ACTION: TSym = Sym('SAGA_CONNECT_ACTION');
 
 export function sagaConnect<TState>(store$: Store<TState>,
-                                    generator: ()=>Iterator<any>,
+                                    iterator: Iterator<any>,
                                     immediate?: boolean): Saga<TState> {
-    let process = new Saga<TState>(generator);
+    let process = new Saga<TState>();
+
     // update$ is a Subject, so no value can be obtained before the first update happens. This
     // is causing problems to the select effect.
+
+    // to the process
     store$.update$.subscribe(process);
+    // from the process
     process.thunk$.subscribe((_t: Thunk) => store$.dispatch(_t));
     process.action$.subscribe((_a: Action) => store$.dispatch(_a));
+    // process.log$.subscribe()
+
     if (immediate) {
         process.run();
         // right after run, emit a special connect action, which transmits

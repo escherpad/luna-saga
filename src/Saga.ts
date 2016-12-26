@@ -26,18 +26,13 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
     public action$:Subject<any>;
     public thunk$:Subject<()=>any>;
 
-    constructor(proc:()=>Iterator<any>) {
+    constructor(proc:Iterator<any>) {
         super();// replay just no past event, just broadcase new ones.
+        this.process = proc;
         this.log$ = new Subject<any>();
         this.action$ = new Subject<Action>();
         this.thunk$ = new Subject<()=>any>();
         this.replay$ = new ReplaySubject<StateActionBundle<TState>>(1);
-        this.setProcess(proc);
-    }
-
-    setProcess(proc:()=>Iterator<any>) {
-        if (typeof proc !== "undefined") this.process = proc();
-        return this;
     }
 
     executeEffect(effect:TEffectBase&any):Promise<any> {

@@ -69,7 +69,7 @@ describe("saga.simple.spec: Promise Handling", function () {
             return "returned value is logged but not evaluated.";
         }
 
-        let saga = new Saga<TestAction>(idMaker);
+        let saga = new Saga<TestAction>(idMaker());
         let startDate = Date.now();
         saga.log$.subscribe(
             (_:any)=>console.log("log: ", _),

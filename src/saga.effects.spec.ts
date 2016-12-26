@@ -56,7 +56,7 @@ describe("saga.effects.spec", function () {
             yield done;
         }
 
-        let saga = new Saga<TestState>(idMaker);
+        let saga = new Saga<TestState>(idMaker());
         let testActions = [
             {type: "INIT_STORE"},
             {type: "INC"},
@@ -119,7 +119,7 @@ describe("saga.effects.spec", function () {
             yield done;
         }
 
-        let saga = new Saga<TestState>(idMaker);
+        let saga = new Saga<TestState>(idMaker());
 
         // building the test store
         let counterReducer = <Reducer>function <Number>(state: number = 0, action: TestAction): number {
