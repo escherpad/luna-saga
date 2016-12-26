@@ -66,7 +66,7 @@ function thunk():()=>Action {
     }
 }
 
-function* idMaker():Iterator<any> {
+function* processStub():Iterator<any> {
     yield 0;                                  // 0
     yield;                                    // undefined
     yield {type: "INC"};                      // this is an action
@@ -83,7 +83,7 @@ function* idMaker():Iterator<any> {
     return "returned value is logged but not evaluated.";
 }
 
-let saga = new Saga<TestAction>(idMaker);
+let saga = new Saga<TestAction>(processStub);
 let startDate = Date.now();
 saga.log$.subscribe(
     (_:any)=>console.log("log: ", _),
@@ -187,7 +187,7 @@ Effect is short for **side-effect**. `luna-saga`'s effect collection allows you 
 Below is the test for `luna-saga`. You can look at what is happening here to understand how they work.
 
 ```typescript
-function* idMaker():Iterator<any> {
+function* processStub():Iterator<any> {
     let update:any;
     
     `take` halts the action and wait for an action of particular type.
@@ -291,12 +291,13 @@ let update = yield dispatch(<your_action_>);
 I didn't really see a huge need for these but I implemented them anyways. You can yield functions directly without using side effect. However these are useful when you want to run object methods.
 
 **update**: now the delay function is implemented with this call effect!
-##### Example usage:
+
+##### Example usage for **delay**:
 ```javascript
 import {delay} from "luna-saga";
 
 function* yourProcess(){
-    yield call(delay, 500) // <= this lets the saga wait for 500 milliseconds)
+    yield call(delay, 500); // <= this lets the saga wait for 500 milliseconds)
 }
 ```
 
