@@ -12,49 +12,71 @@ var isFunction_1 = require("./util/isFunction");
 var rxjs_1 = require("rxjs");
 var isUndefined_1 = require("./util/isUndefined");
 require("setimmediate"); // refer to https://github.com/YuzuJS/setImmediate/issues/48
+var Sym_1 = require("./util/Sym");
 var effectsHelpers_1 = require("./effects/effectsHelpers");
 var isCallback_2 = require("./util/isCallback");
 var isNull_1 = require("./util/isNull");
+exports.SAGA_CONNECT_ACTION = Sym_1.Sym('SAGA_CONNECT_ACTION');
 var Saga = (function (_super) {
     __extends(Saga, _super);
     function Saga(proc) {
         var _this = _super.call(this) || this;
+        _this.isHalted = false;
+        _this.process = proc;
         _this.log$ = new rxjs_1.Subject();
         _this.action$ = new rxjs_1.Subject();
         _this.thunk$ = new rxjs_1.Subject();
         _this.replay$ = new rxjs_1.ReplaySubject(1);
-        _this.setProcess(proc);
         return _this;
     }
-    Saga.prototype.setProcess = function (proc) {
-        if (typeof proc !== "undefined")
-            this.process = proc();
-        return this;
-    };
-    Saga.prototype.executeEffect = function (effect) {
-        var type = effect.type;
-        if (type === effectsHelpers_1.TAKE) {
-            var _effect = effect;
-            return effectsHelpers_1.takeHandler(_effect, this);
-        }
-        else if (type === effectsHelpers_1.DISPATCH) {
-            var _effect = effect;
-            return effectsHelpers_1.dispatchHandler(_effect, this);
-        }
-        else if (type === effectsHelpers_1.CALL) {
-            var _effect = effect;
-            return effectsHelpers_1.callHandler(_effect, this);
-        }
-        else if (type === effectsHelpers_1.SELECT) {
-            var _effect = effect;
-            return effectsHelpers_1.selectHandler(_effect, this);
+    Saga.prototype.next = function (value) {
+        this.value = value;
+        if (this.isHalted) {
+            this.childProcess.process.next(value);
         }
         else {
-            return Promise.reject("executeEffect Error: effect is not found " + JSON.stringify(effect));
+            _super.prototype.next.call(this, value);
+            this.replay$.next(value);
         }
     };
-    Saga.prototype.evaluateYield = function (yielded, nextYield) {
+    Saga.prototype._nextYield = function (res, err) {
         var _this = this;
+        var yielded;
+        if (typeof err !== "undefined" && !isNull_1.isNull(err)) {
+            /* [DONE] we need to handle the error here in case the generator does not handle it
+             correctly.*/
+            try {
+                yielded = this.process.throw(err);
+            }
+            catch (e) {
+                /* if an exception is thrown, `yield` would be undefined, and we need to
+                 terminate the process. */
+                // todo: make the stack trace prettier and more informative.
+                console.warn('generator has raised an unhandled exception. This process will be terminated.', this.process);
+                console.error(err);
+                return this.complete();
+            }
+        }
+        else {
+            yielded = this.process.next(res);
+        }
+        if (!yielded) {
+            /*should never hit here.*/
+            console.warn('`yielded` is undefined. This is likely a problem with `luna-saga`.');
+            this.complete();
+        }
+        else if (yielded.done) {
+            this._evaluateYield(yielded, function () { return _this.complete(); });
+        }
+        else {
+            this._evaluateYield(yielded, function (res, err) { return _this._nextYield(res, err); });
+        }
+        return this;
+    };
+    Saga.prototype._evaluateYield = function (yielded, nextYield) {
+        var _this = this;
+        if (!yielded)
+            throw Error('`yielded` need to exist');
         this.log$.next(yielded.value);
         var isSynchronous = true;
         if (isUndefined_1.isUndefined(yielded.value)) {
@@ -93,7 +115,7 @@ var Saga = (function (_super) {
         }
         else if (isEffect_1.isEffect(yielded.value)) {
             isSynchronous = false;
-            var p = this.executeEffect(yielded.value).then(function (res) {
+            this._executeEffect(yielded.value).then(function (res) {
                 nextYield(res);
             }, function (err) {
                 nextYield(null, err);
@@ -114,34 +136,63 @@ var Saga = (function (_super) {
             });
         return this;
     };
-    Saga.prototype.next = function (value) {
-        _super.prototype.next.call(this, value);
-        this.replay$.next(value);
+    Saga.prototype._executeEffect = function (effect) {
+        var type = effect.type;
+        if (type === effectsHelpers_1.TAKE) {
+            var _effect = effect;
+            return effectsHelpers_1.takeHandler(_effect, this);
+        }
+        else if (type === effectsHelpers_1.DISPATCH) {
+            var _effect = effect;
+            return effectsHelpers_1.dispatchHandler(_effect, this);
+        }
+        else if (type === effectsHelpers_1.CALL) {
+            var _effect = effect;
+            return effectsHelpers_1.callHandler(_effect, this);
+        }
+        else if (type === effectsHelpers_1.SELECT) {
+            var _effect = effect;
+            return effectsHelpers_1.selectHandler(_effect, this);
+        }
+        else {
+            return Promise.reject("executeEffect Error: effect is not found " + JSON.stringify(effect));
+        }
     };
-    Saga.prototype.nextYield = function (res, err) {
-        var _this = this;
-        var yielded;
-        if (typeof err !== "undefined" && !isNull_1.isNull(err)) {
-            yielded = this.process.throw(err);
-        }
-        else {
-            yielded = this.process.next(res);
-        }
-        if (yielded && yielded.done) {
-            this.evaluateYield(yielded, function () { return _this.complete(); });
-        }
-        else {
-            this.evaluateYield(yielded, function (res, err) { return _this.nextYield(res, err); });
-        }
-        return this;
+    Saga.prototype.getValue = function () {
+        return this.value;
     };
     Saga.prototype.run = function () {
         if (typeof this.process === "undefined")
             return this;
-        this.nextYield();
+        this._nextYield();
         return this;
     };
+    Saga.prototype.startChildProcess = function (newProcess, onErrorAndCompletion) {
+        this.isHalted = true;
+        this.childProcess = {
+            process: newProcess,
+            subscriptions: [
+                newProcess.action$.subscribe(this.action$),
+                newProcess.thunk$.subscribe(this.thunk$),
+                newProcess.log$.subscribe(this.log$.next.bind(this.log$), onErrorAndCompletion, onErrorAndCompletion),
+            ]
+        };
+        newProcess.run();
+        var currentValue = this.getValue();
+        newProcess.next({
+            state: currentValue ? currentValue.state : undefined,
+            action: { type: exports.SAGA_CONNECT_ACTION }
+        });
+    };
+    Saga.prototype.resume = function () {
+        this.isHalted = false;
+        this.childProcess.subscriptions.forEach(function (sub) {
+            sub.unsubscribe();
+        });
+        delete this.childProcess;
+    };
     Saga.prototype.complete = function () {
+        this.replay$.complete();
         this.log$.complete();
         this.action$.complete();
         this.thunk$.complete();

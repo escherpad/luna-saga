@@ -1,14 +1,15 @@
 "use strict";
 var Saga_1 = require("./Saga");
-var Sym_1 = require("./util/Sym");
-exports.SAGA_CONNECT_ACTION = Sym_1.Sym('SAGA_CONNECT_ACTION');
-function sagaConnect(store$, generator, immediate) {
-    var process = new Saga_1.default(generator);
+function sagaConnect(store$, iterator, immediate) {
+    var process = new Saga_1.default(iterator);
     // update$ is a Subject, so no value can be obtained before the first update happens. This
     // is causing problems to the select effect.
+    // to the process
     store$.update$.subscribe(process);
+    // from the process
     process.thunk$.subscribe(function (_t) { return store$.dispatch(_t); });
     process.action$.subscribe(function (_a) { return store$.dispatch(_a); });
+    // process.log$.subscribe()
     if (immediate) {
         process.run();
         // right after run, emit a special connect action, which transmits
@@ -16,7 +17,7 @@ function sagaConnect(store$, generator, immediate) {
         // the state right away.
         var initialUpdate = {
             state: store$.getValue(),
-            action: { type: exports.SAGA_CONNECT_ACTION }
+            action: { type: Saga_1.SAGA_CONNECT_ACTION }
         };
         process.next(initialUpdate);
     }

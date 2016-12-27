@@ -8,7 +8,7 @@ exports.$CALLBACK_THROW = Sym_1.Sym("$CALLBACK_THROW");
 exports.CALLBACK = { type: $CALLBACK };
 exports.CALLBACK_START = { type: exports.$CALLBACK_START };
 function isCallback(callbackObject) {
-    return (callbackObject && callbackObject.type === $CALLBACK);
+    return (!!callbackObject && callbackObject.type === $CALLBACK);
 }
 exports.isCallback = isCallback;
 function CallbackThrow(err) {

@@ -1,7 +1,16 @@
 "use strict";
-/** Created by ge on 3/28/16. */
+/** Created by ge on 3/28/16.
+ * These effect handling logic are not intended to be pure functions. They are
+ * supposed to be aware of the parent thread via the `_this` parameter that is
+ * passed in, and are free to call methods of the parent.
+ *
+ * Spinning up a new process however, is a bit tricky.
+ * */
 var Sym_1 = require("../util/Sym");
 var isArray_1 = require("../util/isArray");
+var isIterator_1 = require("../util/isIterator");
+var Saga_1 = require("../Saga");
+var isPromise_1 = require("../util/isPromise");
 exports.EFFECT = Sym_1.Sym("EFFECT");
 exports.TAKE = Sym_1.Sym("TAKE");
 function take(actionType) {
@@ -89,7 +98,27 @@ function callHandler(effect, _this) {
     var fn = effect.fn, args = effect.args, context = effect.context;
     try {
         var result = fn.apply(context, args);
-        return Promise.resolve(result);
+        // cast iterator `result` to iterable, and use Promise.all to process it.
+        if (isIterator_1.isIterator(result)) {
+            // todo: add generator handling logic
+            var newProcess_1 = new Saga_1.default(result);
+            return new Promise(function (resolve, reject) {
+                _this.startChildProcess(newProcess_1, function (err) {
+                    if (err)
+                        return reject(err);
+                    else {
+                        _this.resume();
+                        return resolve();
+                    }
+                });
+            });
+        }
+        else if (isPromise_1.isPromise(result)) {
+            return result;
+        }
+        else {
+            return Promise.resolve(result);
+        }
     }
     catch (e) {
         return Promise.reject(e);
@@ -114,7 +143,7 @@ function selectHandler(effect, _this) {
     var selector = effect.selector;
     return new Promise(function (resolve, reject) {
         var isResolved = false;
-        /** DONE: to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle. */
+        // [DONE] to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle.
         _this.replay$.take(1)
             .map(function (update) {
             if (typeof selector === "undefined") {
