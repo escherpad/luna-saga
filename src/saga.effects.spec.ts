@@ -8,6 +8,7 @@ import {Store} from "luna/dist/index";
 import {Reducer} from "luna/dist/index";
 import {delay} from "./helpers";
 import {SAGA_CONNECT_ACTION} from "./Saga";
+import {isAction} from "./util/isAction";
 
 interface TestState {
     number?: number;
@@ -15,12 +16,12 @@ interface TestState {
 interface TestAction extends Action {
     payload?: any;
 }
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
 
 describe("saga.effects.spec", function () {
-    it("take effect allow yield on a certain type of actions", function (done: ()=>void) {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 550;
+    it("take effect allow yield on a certain type of actions", function (done: () => void) {
 
-        function thunk(): ()=>Action {
+        function thunk(): () => Action {
             return () => {
                 return {type: "DEC"};
             }
@@ -35,7 +36,7 @@ describe("saga.effects.spec", function () {
             update = yield dispatch({type: "NOOP"});
             console.log('2 *****', update);
             expect(update).toEqual({state: {number: 1}, action: {type: "NOOP"}});
-            update = yield call(()=> "returned value");
+            update = yield call(() => "returned value");
             console.log('3 *****', update);
             // now delay:
             yield call(delay, 500);
@@ -77,17 +78,18 @@ describe("saga.effects.spec", function () {
         let store$ = new Store({number: counterReducer});
         // subscribe the saga to the store (state,action) bundle
         store$.update$.subscribe(saga);
-        saga.action$.subscribe((_: any)=> {
-            console.log("action: ", _);
-            store$.dispatch(_);
+        saga.action$.subscribe((action: any) => {
+            console.log("action: ", action);
+            if (!isAction(action)) throw console.error("action is ill defined", action);
+            store$.dispatch(action);
         });
-        saga.thunk$.subscribe((_: any)=> {
+        saga.thunk$.subscribe((_: any) => {
             console.log("thunk: ", _);
             store$.dispatch(_);
         });
         saga.log$.subscribe(
-            (_: any)=>console.log("log: ", _),
-            (err: any)=>console.log("saga error: ", err)
+            (_: any) => console.log("log: ", _),
+            (err: any) => console.log("saga error: ", err)
         );
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
@@ -100,7 +102,7 @@ describe("saga.effects.spec", function () {
         store$.dispatch(testActions[4]);
     });
 
-    it("test select effect corner cases", function (done: ()=>void) {
+    it("test select effect corner cases", function (done: () => void) {
 
         function* idMaker(): Iterator<any> {
             let numberState: any;
@@ -134,17 +136,18 @@ describe("saga.effects.spec", function () {
         let store$ = new Store({number: counterReducer});
         // subscribe the saga to the store (state,action) bundle
         store$.update$.subscribe(saga);
-        saga.action$.subscribe((_: any)=> {
-            console.log("action: ", _);
-            store$.dispatch(_);
+        saga.action$.subscribe((action: any) => {
+            console.log("action: ", action);
+            if (!isAction(action)) throw console.error("action is ill defined", action);
+            store$.dispatch(action);
         });
-        saga.thunk$.subscribe((_: any)=> {
+        saga.thunk$.subscribe((_: any) => {
             console.log("thunk: ", _);
             store$.dispatch(_);
         });
         saga.log$.subscribe(
-            (_: any)=>console.log("log: ", _),
-            (err: any)=>console.log("saga error: ", err)
+            (_: any) => console.log("log: ", _),
+            (err: any) => console.log("saga error: ", err)
         );
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();

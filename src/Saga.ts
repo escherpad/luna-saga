@@ -46,23 +46,44 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
         this.replay$ = new ReplaySubject<StateActionBundle<TState>>(1);
     }
 
-    _executeEffect(effect: TEffectBase&any): Promise<any> {
-        let type: TSym = effect.type;
-        if (type === TAKE) {
-            let _effect: ITakeEffect = effect;
-            return takeHandler(_effect, this);
-        } else if (type === DISPATCH) {
-            let _effect: IDispatchEffect = effect;
-            return dispatchHandler(_effect, this);
-        } else if (type === CALL) {
-            let _effect: ICallEffect = effect;
-            return callHandler(_effect, this);
-        } else if (type === SELECT) {
-            let _effect: ISelectEffect = effect;
-            return selectHandler(_effect, this);
+    next(value: StateActionBundle<TState>) {
+        this.value = value;
+        if (this.isHalted) {
+            this.childProcess.process.next(value);
         } else {
-            return Promise.reject(`executeEffect Error: effect is not found ${JSON.stringify(effect)}`);
+            super.next(value);
+            this.replay$.next(value);
         }
+    }
+
+    _nextYield(res?: any, err?: any) {
+        let yielded: IteratorResult<any>;
+        if (typeof err !== "undefined" && !isNull(err)) {
+            /* [DONE] we need to handle the error here in case the generator does not handle it
+             correctly.*/
+            try {
+                yielded = this.process.throw(err);
+            } catch (e) {
+                /* if an exception is thrown, `yield` would be undefined, and we need to
+                 terminate the process. */
+                // todo: make the stack trace prettier and more informative.
+                console.warn('generator has raised an unhandled exception. This process will be terminated.', this.process);
+                console.error(err);
+                return this.complete();
+            }
+        } else {
+            yielded = this.process.next(res);
+        }
+        if (!yielded) {
+            /*should never hit here.*/
+            console.warn('`yielded` is undefined. This is likely a problem with `luna-saga`.');
+            this.complete();
+        } else if (yielded.done) {
+            this._evaluateYield(yielded, () => this.complete());
+        } else {
+            this._evaluateYield(yielded, (res?: any, err?: any) => this._nextYield(res, err));
+        }
+        return this;
     }
 
     _evaluateYield(yielded: IteratorResult<any>,
@@ -129,43 +150,22 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
         return this;
     }
 
-    _nextYield(res?: any, err?: any) {
-        let yielded: IteratorResult<any>;
-        if (typeof err !== "undefined" && !isNull(err)) {
-            /* [DONE] we need to handle the error here in case the generator does not handle it
-             correctly.*/
-            try {
-                yielded = this.process.throw(err);
-            } catch (e) {
-                /* if an exception is thrown, `yield` would be undefined, and we need to
-                 terminate the process. */
-                // todo: make the stack trace prettier and more informative.
-                console.warn('generator has raised an unhandled exception. This process will be terminated.', this.process);
-                console.error(err);
-                return this.complete();
-            }
+    _executeEffect(effect: TEffectBase&any): Promise<any> {
+        let type: TSym = effect.type;
+        if (type === TAKE) {
+            let _effect: ITakeEffect = effect;
+            return takeHandler(_effect, this);
+        } else if (type === DISPATCH) {
+            let _effect: IDispatchEffect = effect;
+            return dispatchHandler(_effect, this);
+        } else if (type === CALL) {
+            let _effect: ICallEffect = effect;
+            return callHandler(_effect, this);
+        } else if (type === SELECT) {
+            let _effect: ISelectEffect = effect;
+            return selectHandler(_effect, this);
         } else {
-            yielded = this.process.next(res);
-        }
-        if (!yielded) {
-            /*should never hit here.*/
-            console.warn('`yielded` is undefined. This is likely a problem with `luna-saga`.');
-            this.complete();
-        } else if (yielded.done) {
-            this._evaluateYield(yielded, () => this.complete());
-        } else {
-            this._evaluateYield(yielded, (res?: any, err?: any) => this._nextYield(res, err));
-        }
-        return this;
-    }
-
-    next(value: StateActionBundle<TState>) {
-        this.value = value;
-        if (this.isHalted) {
-            this.childProcess.process.next(value);
-        } else {
-            super.next(value);
-            this.replay$.next(value);
+            return Promise.reject(`executeEffect Error: effect is not found ${JSON.stringify(effect)}`);
         }
     }
 
@@ -210,6 +210,7 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
     }
 
     complete() {
+
         this.replay$.complete();
         this.log$.complete();
         this.action$.complete();

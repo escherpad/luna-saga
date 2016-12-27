@@ -2,6 +2,6 @@
 /// <reference path="./lodash.isplainobject.d.ts"/>
 
 import isPlainObject = require("lodash.isplainobject");
-export function isAction(obj: any): boolean {
-    return (typeof obj.type !== "undefined" && isPlainObject(obj) && !obj.__isNotAction)
+export function isAction(obj?: any): boolean {
+    return (!!obj && typeof obj.type !== "undefined" && isPlainObject(obj) && !obj.__isNotAction)
 }
