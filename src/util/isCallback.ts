@@ -8,7 +8,7 @@ export const $CALLBACK_THROW:TSym = Sym("$CALLBACK_THROW");
 
 export interface ICallback {
     type:TSym;
-    [key:string]: any;
+    [key:string]: any | undefined;
 }
 
 export const CALLBACK:ICallback = {type: $CALLBACK};

@@ -1,14 +1,11 @@
 /** Created by ge on 12/6/16. */
 import {Store, Thunk, Action, StateActionBundle} from "luna";
-import Saga from "./Saga";
-import {Sym, TSym} from "./util/Sym";
-
-export const SAGA_CONNECT_ACTION: TSym = Sym('SAGA_CONNECT_ACTION');
+import Saga, {SAGA_CONNECT_ACTION} from "./Saga";
 
 export function sagaConnect<TState>(store$: Store<TState>,
                                     iterator: Iterator<any>,
                                     immediate?: boolean): Saga<TState> {
-    let process = new Saga<TState>();
+    let process = new Saga<TState>(iterator);
 
     // update$ is a Subject, so no value can be obtained before the first update happens. This
     // is causing problems to the select effect.

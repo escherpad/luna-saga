@@ -1,5 +1,4 @@
 /** Created by ge on 3/27/16. */
-/** Created by ge on 3/27/16. */
 import {isPromise} from "rxjs/util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
@@ -11,6 +10,7 @@ interface TestAction extends Action {
     payload?:any;
 }
 
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000;
 describe("saga.simple.spec: Promise Handling", function () {
     it("process runner should work", function (done:()=>void) {
         function Thunk():()=>Action {
@@ -60,7 +60,7 @@ describe("saga.simple.spec: Promise Handling", function () {
 
             result = yield Promise.resolve(1);
             expect(result).toBe(1);
-            var i:number = 0, j:number;
+            let i:number = 0, j:number;
             while (i <= 3) {
                 j = yield i as number;
                 expect(i).toBe(j);

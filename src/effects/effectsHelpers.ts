@@ -1,10 +1,19 @@
-/** Created by ge on 3/28/16. */
+/** Created by ge on 3/28/16.
+ * These effect handling logic are not intended to be pure functions. They are
+ * supposed to be aware of the parent thread via the `_this` parameter that is
+ * passed in, and are free to call methods of the parent.
+ *
+ * Spinning up a new process however, is a bit tricky.
+ * */
 import {Sym, TSym} from "../util/Sym";
 import {TEffectBase} from "./interfaces";
 import {Action, StateActionBundle} from "luna";
 import {Subject} from "rxjs";
 import {TSaga} from "../interfaces";
 import {isArray} from "../util/isArray";
+import {isIterator} from "../util/isIterator";
+import Saga from "../Saga";
+import {isPromise} from "../util/isPromise";
 
 export const EFFECT: TSym = Sym("EFFECT");
 
@@ -88,7 +97,7 @@ export interface ICallEffect extends TEffectBase {
 export const CALL: TSym = Sym("CALL");
 
 export function call(fn: any, ...args: any[]): ICallEffect {
-    var context: any;
+    let context: any;
     if (typeof fn === 'function') {
         return {type: CALL, fn, args};
     } else {
@@ -96,11 +105,29 @@ export function call(fn: any, ...args: any[]): ICallEffect {
         return {type: CALL, fn, args, context};
     }
 }
-export function callHandler<T extends StateActionBundle<any>>(effect: ICallEffect, _this: Subject<T>): Promise<any> {
+export function callHandler<TState, T extends StateActionBundle<TState>>(effect: ICallEffect,
+                                                                         _this: Saga<TState>): Promise<any> {
     let {fn, args, context} = effect;
     try {
         let result: any = fn.apply(context, args);
-        return Promise.resolve(result);
+        // cast iterator `result` to iterable, and use Promise.all to process it.
+        if (isIterator(result)) {
+            // todo: add generator handling logic
+            let newProcess = new Saga(result);
+            return new Promise((resolve, reject) => {
+                _this.startChildProcess(newProcess, (err) => {
+                    if (err) return reject(err);
+                    else {
+                        _this.resume();
+                        return resolve()
+                    }
+                });
+            });
+        } else if (isPromise(result)) {
+            return result;
+        } else {
+            return Promise.resolve(result);
+        }
     } catch (e) {
         return Promise.reject(e);
     }
@@ -111,6 +138,7 @@ export function apply(context: any, fn: any, ...args: any[]): ICallEffect {
     return {type: CALL, fn, args, context};
 }
 
+//todo: call => handle generators
 //todo: cps(fn, ...args)
 //todo: cps([context, fn], ...args)
 //todo: fork(fn, ...args)
@@ -131,7 +159,7 @@ export function selectHandler<T extends StateActionBundle<any>>(effect: ISelectE
     let selector = effect.selector;
     return new Promise((resolve, reject) => {
         let isResolved = false;
-        /** DONE: to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle. */
+        // [DONE] to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle.
         _this.replay$.take(1)
             .map((update: StateActionBundle<any>): any => {
                 if (typeof selector === "undefined") {

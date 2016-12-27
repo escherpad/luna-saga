@@ -37,7 +37,7 @@ describe("saga.spec: store thread schedule", function () {
                 return state;
             }
         };
-        var rootReducer:Hash<Reducer> = {
+        let rootReducer:Hash<Reducer> = {
             counter: counterReducer,
             name: stringReducer
         };
@@ -46,14 +46,14 @@ describe("saga.spec: store thread schedule", function () {
             yield {type: 'INC'};
         }
 
-        var saga$ = new Saga<TState, TestAction>(proc());
-        var store$ = new Store<TState>(rootReducer); // does not need to pass in  a inital state
+        let saga$ = new Saga<TState>(proc());
+        let store$ = new Store<TState>(rootReducer); // does not need to pass in  a inital state
 
         //store$.map(state => ({state, "action": store$.action$.getValue()})).subscribe(_=> console.log("stream:", _));
         saga$.action$.subscribe((action:TestAction)=>store$.dispatch(action));
         saga$.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
 
-        var firstAction:TestAction;
+        let firstAction:TestAction;
         store$.action$.subscribe(action=> {
             firstAction = action;
         });
@@ -80,12 +80,12 @@ describe("saga.spec: store thread schedule", function () {
         expect(store$.value).toEqual({counter: 1, name: "episodeyang"});
 
         /*Now let's do something complicated*/
-        var subscription = store$.select('counter').subscribe(count=> store$.dispatch({type: "CAPITALIZE"}));
+        let subscription = store$.select('counter').subscribe(count=> store$.dispatch({type: "CAPITALIZE"}));
         store$.dispatch({type: "INC"});
         expect(store$.value).toEqual({counter: 2, name: "EPISODEYANG"});
         subscription.unsubscribe();
 
-        var subscription = store$.select('name')
+        subscription = store$.select('name')
             .subscribe(name=> {
                 store$.dispatch({type: "INC"})
             });
@@ -95,9 +95,9 @@ describe("saga.spec: store thread schedule", function () {
         subscription.unsubscribe();
 
         /* Now let's add some async subscription */
-        var subscription = store$.select('name').subscribe(name=> {
+        subscription = store$.select('name').subscribe(name=> {
             setTimeout(()=> {
-                var currentCount = store$.value.counter;
+                let currentCount = store$.value.counter;
                 store$.dispatch({type: "INC"});
                 expect(store$.value.counter).toBe(currentCount + 1);
             }, 10);
