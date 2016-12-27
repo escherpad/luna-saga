@@ -34,7 +34,9 @@
     "clean": "rimraf dist",
     "build:src": "tsc --target es5",
     "clean+build": "npm run clean && npm run build:src",
-    "publish:patch": "npm run clean+build && git add . && git commit -m 'BUILD' && git push && npm version patch && npm publish"
+    "publish:patch": "npm run clean+build && git add . && git commit -m 'BUILD' && git push && npm version patch && npm publish",
+    "publish:minor": "npm run clean+build && git add . && git commit -m 'BUILD' && git push && npm version minor && npm publish",
+    "publish:major": "npm run clean+build && git add . && git commit -m 'BUILD' && git push && npm version major && npm publish"
   },
   "author": "Ge Yang <yangge1987@gmail.com>",
   "license": "MIT",
