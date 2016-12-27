@@ -1,5 +1,3 @@
-declare var describe: any, it: any, expect: any, console: Console, require: any;
-
 /*testing generator syntax to familiar myself with generator syntax.*/
 require('./generator.spec.ts');
 /*testing saga by itself, without a store*/

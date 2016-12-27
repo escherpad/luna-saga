@@ -151,7 +151,7 @@ describe("saga.effects.spec", function () {
         );
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
-        saga.next({state: store$.getValue(), action: {type: SAGA_CONNECT_ACTION}});
+        saga.next({state: store$.getValue(), action: {type: <string>SAGA_CONNECT_ACTION}});
 
     });
 

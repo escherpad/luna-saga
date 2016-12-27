@@ -45,7 +45,7 @@ describe("saga.store.spec: store thread schedule", function () {
 
         let validThunk_has_ran = false;
 
-        function validThunk(): null {
+        function validThunk(): any {
             validThunk_has_ran = true;
             return {type: "VALID_ACTION_STUB"};
         }
