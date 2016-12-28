@@ -83,7 +83,7 @@ function* processStub():Iterator<any> {
     return "returned value is logged but not evaluated.";
 }
 
-let saga = new Saga<TestAction>(processStub);
+let saga = new Saga<TestAction>(processStub());
 let startDate = Date.now();
 saga.log$.subscribe(
     (_:any)=>console.log("log: ", _),
@@ -131,7 +131,7 @@ npm install luna-saga@git+https://git@github.com/escherpad/luna-saga.git
 ```javascript
 // processGenerator is your generator
 // Don't forget to `run` it!
-let saga = new Saga(processGenerator).run();
+let saga = new Saga(processGenerator()).run();
 
 // store$ is your luna rxjs store
 store$.update$.subscribe(saga)
@@ -142,7 +142,7 @@ saga.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
 
 ## The Instance
 
-Calling `new Saga(processGenerator)` returns a `saga` instance. Luna `saga` instance is inhereted from Rxjs.Subject.
+Calling `new Saga(processGenerator())` returns a `saga` instance. Luna `saga` instance is inhereted from Rxjs.Subject.
 
 The `saga.log$` is a (Publish) Subject for all of the yielded expressions from the generator. 
 
@@ -166,7 +166,7 @@ The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna
 6. [ ] ... many other effects
 7. [ ] `race` flow controller
 8. [ ] `parallel` flow controller
-1. [x] generator spawning and test => `new Saga(proc)`
+1. [x] generator spawning and test => `new Saga(procGenerator())`
 2. [x] ==NEW!== double yield syntax for standard "error-first" callback function.
 2. [x] `take` effect
 3. [x] `dispatch` (replace name `put`) effect 
@@ -335,7 +335,7 @@ function* proc(){
     state = yield select();
     console.log(" 3rd select");
 }
-var saga = new Saga(proc);
+var saga = new Saga(proc());
 
 // this would not run:
 store$.update$.subscribe(saga);
