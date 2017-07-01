@@ -159,13 +159,22 @@ The `saga.action$` is a (Publish) Subject for out-going actions that you are gon
 The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna dispatch back to the store. It also does not have the `getValue()` method.
 
 
-## Todo (and Progress):
+## Todo:
 
+1. [ ] work on fork, because call does not allow async start of process
+1. [ ] refactor call (and apply code). Difference is that call (and apply) do not return `processId`.
+1.     because they finish right away synchronously. On the other hand, `fork` returns a processId
+1.     that could be used to cancel the task.
+1. [ ] All new processes are directly attached to the main store object instead of on some local
+1.     `child_process` pool.
+1. [ ] When parent process is cancelled, look up child processes (by id), then cancel them as well.
 4. [ ] `takeEvery` helper
 5. [ ] `takeLast` helper
 6. [ ] ... many other effects
 7. [ ] `race` flow controller
 8. [ ] `parallel` flow controller
+
+### Done
 1. [x] generator spawning and test => `new Saga(procGenerator())`
 2. [x] ==NEW!== double yield syntax for standard "error-first" callback function.
 2. [x] `take` effect

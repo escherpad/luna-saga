@@ -5,21 +5,20 @@
  *
  * Spinning up a new process however, is a bit tricky.
  *
- * ## Todo List
+ * ### Effect API Todo List
  * done: take,
  * todo: takeEvery,
  * todo: takeLatest,
  * done: select,
- * done: call => handle generators synchronously
+ * done: call, SYNC: run generators synchronously, continue after complete.
  * done: apply,
- * done: dispatch (same as `put` in redux-saga),
- * todo: fork => handle generators asynchronously
+ * done: dispatch (same as `put` in redux-saga. We call `put` `dispatch` instead.),
+ * todo: fork, ASYNC: fork out a new process without waiting for it's completion.
  * todo: fork(fn, ...args)
  * todo: fork([context, fn], ...args)
-
  * todo: takem,
- * todo: all,
- * todo: race,
+ * todo: all, SYNC: `yield all([gen1, gen2, ...])` starts all generators at the same time, then wait for all to finish.
+ * todo: race, SYNC: `yield race([gen1, gen2, ...])` starts all, wait for one to finish and cancel the others.
  * todo: cps,
  * todo: spawn,
  * todo: join,
