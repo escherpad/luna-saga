@@ -4,7 +4,39 @@
  * passed in, and are free to call methods of the parent.
  *
  * Spinning up a new process however, is a bit tricky.
- * */
+ *
+ * ## Todo List
+ * done: take,
+ * todo: takeEvery,
+ * todo: takeLatest,
+ * done: select,
+ * done: call => handle generators synchronously
+ * done: apply,
+ * done: dispatch (same as `put` in redux-saga),
+ * todo: fork => handle generators asynchronously
+ * todo: fork(fn, ...args)
+ * todo: fork([context, fn], ...args)
+
+ * todo: takem,
+ * todo: all,
+ * todo: race,
+ * todo: cps,
+ * todo: spawn,
+ * todo: join,
+ * todo: cancel,
+ * todo: actionChannel,
+ * todo: cancelled,
+ * todo: flush,
+ * todo: getContext,
+ * todo: setContext,
+ * todo: throttle,
+ * todo: cps(fn, ...args)
+ * todo: cps([context, fn], ...args)
+ * todo: join(task)
+ * todo: cancel(task)
+ */
+
+
 import {Sym, TSym} from "../util/Sym";
 import {TEffectBase} from "./interfaces";
 import {Action, StateActionBundle} from "luna";
@@ -96,6 +128,8 @@ export interface ICallEffect extends TEffectBase {
 }
 export const CALL: TSym = Sym("CALL");
 
+/** `call` starts another child process synchronously. The main process will restart after the new child process
+ * or promise has already been resolved. */
 export function call(fn: any, ...args: any[]): ICallEffect {
     let context: any;
     if (typeof fn === 'function') {
@@ -105,6 +139,7 @@ export function call(fn: any, ...args: any[]): ICallEffect {
         return {type: CALL, fn, args, context};
     }
 }
+
 export function callHandler<TState, T extends StateActionBundle<TState>>(effect: ICallEffect,
                                                                          _this: Saga<TState>): Promise<any> {
     let {fn, args, context} = effect;
@@ -113,6 +148,7 @@ export function callHandler<TState, T extends StateActionBundle<TState>>(effect:
         // cast iterator `result` to iterable, and use Promise.all to process it.
         if (isIterator(result)) {
             // todo: add generator handling logic
+            // todo: add error handling
             let newProcess = new Saga(result);
             return new Promise((resolve, reject) => {
                 _this.startChildProcess(newProcess, (err) => {
@@ -138,13 +174,6 @@ export function apply(context: any, fn: any, ...args: any[]): ICallEffect {
     return {type: CALL, fn, args, context};
 }
 
-//todo: call => handle generators
-//todo: cps(fn, ...args)
-//todo: cps([context, fn], ...args)
-//todo: fork(fn, ...args)
-//todo: fork([context, fn], ...args)
-//todo: join(task)
-//todo: cancel(task)
 
 export interface ISelectEffect extends TEffectBase {
     selector?: string;

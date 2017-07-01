@@ -77,7 +77,7 @@ describe("saga.store.spec: store thread schedule", function () {
         }
 
         let saga$ = new Saga<TState>(proc());
-        let store$ = new Store<TState>(rootReducer); // does not need to pass in  a inital state
+        let store$ = new Store<TState>(rootReducer); // does not need to pass in  a initial state
 
         //store$.map(state => ({state, "action": store$.action$.getValue()})).subscribe(_=> console.log("stream:", _));
         saga$.action$.subscribe((action: TestAction) => store$.dispatch(action));

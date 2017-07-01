@@ -18,7 +18,7 @@ interface TestAction extends Action {
 }
 
 describe("saga.effects.spec", function () {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 550;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 4000;
     it("take effect allow yield on a certain type of actions", function (done: () => void) {
 
         function thunk(): () => Action {
@@ -155,25 +155,28 @@ describe("saga.effects.spec", function () {
 
     });
 
-    it("generator handling with CALL effect halder", function (done: () => void) {
+    it("generator handling with CALL effect handler", function (done: () => void) {
 
         function* oneTimeGenerator(): Iterator<any> {
             console.log('executing oneTimeGenerator');
-            console.log("call result", yield call((_: any) => console.log('some >>> ', _), "input argument"));
-            console.log("call result", yield call(delay, 100));
+            console.log("call result",
+                yield call((_: any) => console.log('inside called function >>> args=', _), "input argument"));
+            console.log("call result",
+                yield call(delay, 100));
             yield call(() => console.log('oneTimeGenerator has finished running'));
         }
 
         function* processStub(): Iterator<any> {
             console.log("test delay >> ", yield call(delay, 100));
             yield call(oneTimeGenerator);
+            console.log('processStub has finished running');
         }
 
         let saga = new Saga<TestAction>(processStub());
         let startDate = Date.now();
         saga.log$.subscribe(
-            (_: any) => console.log("log: ", _),
-            (err) => console.log("saga error: ", err),
+            (_: any) => null,//console.log("log: ", _),
+            (err) => null,//console.log("saga error: ", err),
             () => {
                 console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
                 done()

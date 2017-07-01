@@ -43,6 +43,8 @@ describe("generator.spec: Generator Example", function () {
             expect(result.done).toBe(true);
             done();
         });
+
+        // how to remove generator from memory?
     })
 
 

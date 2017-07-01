@@ -32,13 +32,16 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
     private process: Iterator<any>;
     public isHalted: boolean = false;
     private childProcess: IChildProc<TState>;
+    private childProcesss: IChildProc<TState>;
     public replay$: ReplaySubject<StateActionBundle<TState>>;
     public log$: Subject<any>;
     public action$: Subject<any>;
     public thunk$: Subject<() => any>;
 
+    // life-cycle methods
     constructor(proc: Iterator<any>) {
-        super();// replay just no past event, just broadcase new ones.
+        super();// replay just no past event, just broadcast new ones.
+        /* this is just the generator */
         this.process = proc;
         this.log$ = new Subject<any>();
         this.action$ = new Subject<Action>();
@@ -47,13 +50,40 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
     }
 
     next(value: StateActionBundle<TState>) {
+        // proper behavior: play main thread,
         this.value = value;
+        // route the bundles into the child process. (ChildProcess is just a container)
         if (this.isHalted) {
             this.childProcess.process.next(value);
         } else {
-            super.next(value);
+            super.next(value); // notifies the super Subject Object.
             this.replay$.next(value);
         }
+    }
+
+    run() {
+        if (typeof this.process === "undefined") return this;
+        this._nextYield();
+        return this;
+    }
+
+    resume() {
+        this.isHalted = false;
+        // doesn't look like we need to unsubscribe here.
+        this.childProcess.subscriptions.forEach(sub => {
+            sub.unsubscribe();
+        });
+        delete this.childProcess
+    }
+
+    complete() {
+        // todo: need to unsubscribe self from store. Use takeUntil(SagaUnsubscribe) instead.
+        this.replay$.complete();
+        this.thunk$.complete();
+        this.action$.complete();
+        this.log$.complete();
+        super.complete();
+        delete this.process;
     }
 
     _nextYield(res?: any, err?: any) {
@@ -150,7 +180,7 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
         return this;
     }
 
-    _executeEffect(effect: TEffectBase&any): Promise<any> {
+    _executeEffect(effect: TEffectBase & any): Promise<any> {
         let type: TSym = effect.type;
         if (type === TAKE) {
             let _effect: ITakeEffect = effect;
@@ -173,12 +203,8 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
         return this.value;
     }
 
-    run() {
-        if (typeof this.process === "undefined") return this;
-        this._nextYield();
-        return this;
-    }
 
+    /** Starts a single child process, stop the current process, and resume afterward. */
     startChildProcess(newProcess: Saga<TState>, onErrorAndCompletion: (err?: any) => void) {
         this.isHalted = true;
         this.childProcess = {
@@ -193,6 +219,7 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
                 ),
             ]
         };
+        // trigger the first subscription event so that child_proc has the current state(and action).
         newProcess.run();
         let currentValue = this.getValue();
         newProcess.next({
@@ -201,19 +228,8 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
         } as StateActionBundle<TState>);
     }
 
-    resume() {
-        this.isHalted = false;
-        this.childProcess.subscriptions.forEach(sub => {
-            sub.unsubscribe();
-        });
-        delete this.childProcess
+    /** Starts a child process and resume current process without waiting for child_proc completion */
+    forkChildProcess(newProcess: Saga<TState>, onErrorAndCompletion: (err?: any) => void) {
     }
 
-    complete() {
-
-        this.replay$.complete();
-        this.log$.complete();
-        this.action$.complete();
-        this.thunk$.complete();
-    }
 }
