@@ -5,59 +5,65 @@ import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
 import {isFunction} from "./util/isFunction";
-import {Subject, ReplaySubject} from "rxjs";
+import {Subject, ReplaySubject, Observable, Observer, Subscription} from "rxjs";
+import {ISubscription} from 'rxjs/Subscription';
 import {isUndefined} from "./util/isUndefined";
 import "setimmediate"; // refer to https://github.com/YuzuJS/setImmediate/issues/48
 import {TEffectBase} from "./effects/interfaces";
 import {TSym, Sym} from "./util/Sym";
 import {
-    TAKE, DISPATCH, CALL, SELECT,
-    take, dispatch, call, apply, select,
-    ITakeEffect, IDispatchEffect, ICallEffect, ISelectEffect,
-    takeHandler, dispatchHandler, callHandler, selectHandler
+    TAKE, FORK, DISPATCH, CALL, SELECT,
+    ITakeEffect, IForkEffect, IDispatchEffect, ICallEffect, ISelectEffect,
+    takeHandler, forkHandler, dispatchHandler, callHandler, selectHandler
 } from "./effects/effectsHelpers";
 import {CALLBACK_START, CallbackReturn, CallbackThrow} from "./util/isCallback";
 import {isNull} from "./util/isNull";
-import {ISubscription} from "rxjs/subscription";
 
 export const SAGA_CONNECT_ACTION: TSym = Sym('SAGA_CONNECT_ACTION');
 
-interface IChildProc<T> {
-    process: Saga<T>,
-    subscriptions: Array<ISubscription>
+/** ProcessSubject
+ * Subject emits a termination signal via `this.term$` when completeded, then completes
+ * the stream and then removes all subscribers.
+ */
+export class ProcessSubject<T> extends Subject<T> {
+    constructor() {
+        super();
+        /* bind next method */
+        this.next = super.next.bind(this);
+    }
+
 }
 
-export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
+export default class Saga<TState> extends ProcessSubject<StateActionBundle<TState>> {
     private value: StateActionBundle<any>;
     private process: Iterator<any>;
     public isHalted: boolean = false;
-    private childProcess: IChildProc<TState>;
-    private childProcesss: IChildProc<TState>;
+    private childProcesses: Array<Saga<TState>> = [];
     public replay$: ReplaySubject<StateActionBundle<TState>>;
-    public log$: Subject<any>;
-    public action$: Subject<any>;
-    public thunk$: Subject<() => any>;
+    public log$: ProcessSubject<any>;
+    public action$: ProcessSubject<any>;
+    public thunk$: ProcessSubject<() => any>;
 
-    // life-cycle methods
     constructor(proc: Iterator<any>) {
         super();// replay just no past event, just broadcast new ones.
-        /* this is just the generator */
+        /* this is just the process generator */
         this.process = proc;
-        this.log$ = new Subject<any>();
-        this.action$ = new Subject<Action>();
-        this.thunk$ = new Subject<() => any>();
+        /* Various signal streams */
+        this.log$ = new ProcessSubject<any>();
+        this.action$ = new ProcessSubject<Action>();
+        this.thunk$ = new ProcessSubject<() => any>();
+        /* use a replay subject to maintain state for `select` operator.*/
         this.replay$ = new ReplaySubject<StateActionBundle<TState>>(1);
+        this.subscribe(this.replay$);
     }
 
     next(value: StateActionBundle<TState>) {
         // proper behavior: play main thread,
         this.value = value;
-        // route the bundles into the child process. (ChildProcess is just a container)
-        if (this.isHalted) {
-            this.childProcess.process.next(value);
-        } else {
-            super.next(value); // notifies the super Subject Object.
-            this.replay$.next(value);
+        // route the bundles into child processes.
+        if (!this.isHalted) super.next(value); // notifies the super Subject Object.
+        if (this.childProcesses.length) {
+            this.childProcesses.forEach(proc => proc.next(value));
         }
     }
 
@@ -67,23 +73,41 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
         return this;
     }
 
-    resume() {
-        this.isHalted = false;
-        // doesn't look like we need to unsubscribe here.
-        this.childProcess.subscriptions.forEach(sub => {
-            sub.unsubscribe();
-        });
-        delete this.childProcess
+    halt() {
+        this.isHalted = true;
     }
 
-    complete() {
-        // todo: need to unsubscribe self from store. Use takeUntil(SagaUnsubscribe) instead.
-        this.replay$.complete();
+    resume() {
+        this.isHalted = false;
+    }
+
+    terminateChildProcess(childProc: Saga<TState>) {
+        childProc.complete();
+        const ind = this.childProcesses.indexOf(childProc);
+        if (ind >= 0) {
+            this.childProcesses.splice(ind);
+        } else {
+            console.warn('child process is already terminated', childProc);
+        }
+    }
+
+    destroy(): void {
+        this.process = null;
+        this.replay$ = null;
+        this.thunk$ = null;
+        this.action$ = null;
+        this.log$ = null;
+    };
+
+    complete(): void {
+        /* completion releases all handles for GC. */
+        super.complete();
         this.thunk$.complete();
         this.action$.complete();
         this.log$.complete();
-        super.complete();
-        delete this.process;
+
+        /* Now release the observables as well. */
+        this.destroy();
     }
 
     _nextYield(res?: any, err?: any) {
@@ -97,8 +121,11 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
                 /* if an exception is thrown, `yield` would be undefined, and we need to
                  terminate the process. */
                 // todo: make the stack trace prettier and more informative.
-                console.warn('generator has raised an unhandled exception. This process will be terminated.', this.process);
+                console.warn('generator has raised an unhandled exception. This process will be' +
+                    ' terminated.', this.process);
                 console.error(err);
+                // call the destroy instead of complete. complete will terminate `luna`'s
+                // input stream. Error-trapping.
                 return this.complete();
             }
         } else {
@@ -109,6 +136,7 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
             console.warn('`yielded` is undefined. This is likely a problem with `luna-saga`.');
             this.complete();
         } else if (yielded.done) {
+            // call process destroy, which complete various streams.
             this._evaluateYield(yielded, () => this.complete());
         } else {
             this._evaluateYield(yielded, (res?: any, err?: any) => this._nextYield(res, err));
@@ -184,7 +212,10 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
         let type: TSym = effect.type;
         if (type === TAKE) {
             let _effect: ITakeEffect = effect;
-            return takeHandler(_effect, this);
+            return takeHandler({effect: _effect, _this: this});
+        } else if (type === FORK) {
+            let _effect: IForkEffect = effect;
+            return forkHandler(_effect, this);
         } else if (type === DISPATCH) {
             let _effect: IDispatchEffect = effect;
             return dispatchHandler(_effect, this);
@@ -205,21 +236,20 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
 
 
     /** Starts a single child process, stop the current process, and resume afterward. */
-    startChildProcess(newProcess: Saga<TState>, onErrorAndCompletion: (err?: any) => void) {
-        this.isHalted = true;
-        this.childProcess = {
-            process: newProcess,
-            subscriptions: [
-                newProcess.action$.subscribe(this.action$),
-                newProcess.thunk$.subscribe(this.thunk$),
-                newProcess.log$.subscribe(
-                    this.log$.next.bind(this.log$),
-                    onErrorAndCompletion,
-                    onErrorAndCompletion
-                ),
-            ]
-        };
-        // trigger the first subscription event so that child_proc has the current state(and action).
+    forkChildProcess(newProcess: Saga<TState>,
+                     onError?: (err: any) => void,
+                     onCompletion?: () => void) {
+        this.childProcesses.push(newProcess);
+        // Implement error-trapping. Use a stand-alone onError handler
+        newProcess.action$.subscribe(this.action$.next, onError);
+        newProcess.thunk$.subscribe(this.thunk$.next, onError);
+        newProcess.log$.subscribe(this.log$.next, onError, () => {
+            this.terminateChildProcess(newProcess);
+            // release newProcess from memory here.
+            newProcess = null;
+            if (typeof onCompletion == 'function') onCompletion()
+        });
+        // trigger the first subscription event so that child process has the current state(and action).
         newProcess.run();
         let currentValue = this.getValue();
         newProcess.next({
@@ -227,9 +257,5 @@ export default class Saga<TState> extends Subject<StateActionBundle<TState>> {
             action: {type: SAGA_CONNECT_ACTION}
         } as StateActionBundle<TState>);
     }
-
-    /** Starts a child process and resume current process without waiting for child_proc completion */
-    forkChildProcess(newProcess: Saga<TState>, onErrorAndCompletion: (err?: any) => void) {
-    }
-
 }
+

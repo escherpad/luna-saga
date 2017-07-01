@@ -43,7 +43,7 @@ import {Subject} from "rxjs";
 import {TSaga} from "../interfaces";
 import {isArray} from "../util/isArray";
 import {isIterator} from "../util/isIterator";
-import Saga from "../Saga";
+import Saga, {ProcessSubject} from "../Saga";
 import {isPromise} from "../util/isPromise";
 
 export const EFFECT: TSym = Sym("EFFECT");
@@ -58,7 +58,8 @@ export function take(actionType: any): ITakeEffect {
     return {type: TAKE, actionType};
 }
 
-export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffect, _this: Subject<T>): Promise<any> {
+export function takeHandler<T extends StateActionBundle<any>>(parameters: { effect: ITakeEffect, _this: ProcessSubject<T> }): Promise<any> {
+    let {effect, _this} = parameters;
     return new Promise((resolve, reject) => {
         let isResolved = false;
         _this
@@ -97,7 +98,8 @@ export function dispatchHandler<T extends StateActionBundle<any>>(effect: IDispa
     return new Promise((resolve, reject) => {
         let isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
-        _this.take(1)
+        _this
+            .take(1) // do NOT use replay here b/c you want to wait for the next event.
             .subscribe(
                 (saga: T) => {
                     isResolved = true;
@@ -139,25 +141,61 @@ export function call(fn: any, ...args: any[]): ICallEffect {
     }
 }
 
-export function callHandler<TState, T extends StateActionBundle<TState>>(effect: ICallEffect,
-                                                                         _this: Saga<TState>): Promise<any> {
+export function callHandler<TState,
+    T extends StateActionBundle<TState>>(effect: ICallEffect,
+                                         _this: Saga<TState>): Promise<any> {
     let {fn, args, context} = effect;
     try {
         let result: any = fn.apply(context, args);
         // cast iterator `result` to iterable, and use Promise.all to process it.
         if (isIterator(result)) {
-            // todo: add generator handling logic
-            // todo: add error handling
-            let newProcess = new Saga(result);
-            return new Promise((resolve, reject) => {
-                _this.startChildProcess(newProcess, (err) => {
-                    if (err) return reject(err);
-                    else {
-                        _this.resume();
-                        return resolve()
-                    }
-                });
-            });
+            // done: add generator handling logic
+            // done: add error handling
+            _this.halt();
+            return new Promise((resolve, reject) => _this.forkChildProcess(new Saga(result), reject, () => {
+                _this.resume();
+                resolve();
+            }));
+        } else if (isPromise(result)) {
+            return result;
+        } else {
+            return Promise.resolve(result);
+        }
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
+export interface IForkEffect extends TEffectBase {
+    context?: any;
+    fn: any;
+    args?: Array<any>
+}
+export const FORK: TSym = Sym("FORK");
+/** `fork` starts a child process asynchronously. The main process will not block.
+ * */
+export function fork(fn: any, ...args: any[]): IForkEffect {
+    let context: any;
+    if (typeof fn === 'function') {
+        return {type: FORK, fn, args};
+    } else {
+        [context, fn] = fn as any[];
+        return {type: FORK, fn, args, context};
+    }
+}
+
+export function forkHandler<TState,
+    T extends StateActionBundle<TState>>(effect: IForkEffect,
+                                         _this: Saga<TState>): Promise<any> {
+    let {fn, args, context} = effect;
+    try {
+        let result: any = fn.apply(context, args);
+        // cast iterator `result` to iterable, and use Promise.all to process it.
+        if (isIterator(result)) {
+            const childProcess = new Saga(result);
+            _this.forkChildProcess(childProcess);
+            // todo: return a process id to allow process cancellation
+            return Promise.resolve(childProcess);
         } else if (isPromise(result)) {
             return result;
         } else {

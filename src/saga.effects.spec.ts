@@ -1,7 +1,7 @@
 /** Created by ge on 3/27/16. */
 import Saga from "./Saga";
 import {Action} from "luna";
-import {take, dispatch, call, apply, select} from "./effects/effectsHelpers";
+import {take, dispatch, call, apply, select, fork} from "./effects/effectsHelpers";
 import {Observable} from "rxjs/Observable";
 import {queue} from "rxjs/scheduler/queue";
 import {Store} from "luna/dist/index";
@@ -35,6 +35,8 @@ describe("saga.effects.spec", function () {
             // can test NOOP actions without getting hangup
             update = yield dispatch({type: "NOOP"});
             console.log('2 *****', update);
+            update = yield dispatch({type: "NOOP"});
+            console.log('2.5 *****', update);
             expect(update).toEqual({state: {number: 1}, action: {type: "NOOP"}});
             update = yield call(() => "returned value");
             console.log('3 *****', update);
@@ -174,16 +176,36 @@ describe("saga.effects.spec", function () {
 
         let saga = new Saga<TestAction>(processStub());
         let startDate = Date.now();
-        saga.log$.subscribe(
-            (_: any) => null,//console.log("log: ", _),
-            (err) => null,//console.log("saga error: ", err),
-            () => {
+        saga.log$.subscribe(console.log, console.error, () => {
                 console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
                 done()
             }
         );
-        saga.action$.subscribe((_: any) => console.log("action: ", _));
-        saga.thunk$.subscribe((_: any) => console.log("Thunk: ", _));
+        saga.run();
+    });
+
+    it('simple multi-threaded example', function (done: () => void) {
+        function* main() {
+            yield fork(sub);
+            yield call(delay, 100);
+            yield "main-routing";
+            yield call(delay, 100);
+            yield "main-routing end";
+        }
+
+        function* sub() {
+            console.log("sub-routine: 0");
+            yield call(delay, 100);
+            console.log("sub-routine: 1");
+            yield call(delay, 100);
+            console.log("sub-routine: end");
+            yield call(delay, 100);
+            /* the sub routine should be able to finish execution. */
+            done()
+        }
+
+        let saga = new Saga<TestAction>(main());
+        saga.log$.subscribe(null, console.error);
         saga.run();
     });
 });

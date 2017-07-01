@@ -13,10 +13,11 @@ export function sagaConnect<TState>(store$: Store<TState>,
     // This subscription should be destroyed when process finishes.
     store$.update$.subscribe(process);
     // connect the action$ and thunk$ stream to the main store.
-    // These streams are managed by the process. aka they complete on process termination
-    process.thunk$.subscribe((_t: Thunk) => store$.dispatch(_t));
-    process.action$.subscribe((_a: Action) => store$.dispatch(_a));
-    // process.log$.subscribe()
+    // These streams will complete on process termination
+    // since dispatch is just a function, store$ won't be affected (completed).
+    process.thunk$.subscribe(store$.dispatch);
+    process.action$.subscribe(store$.dispatch);
+    // process.log$.subscribe();
 
     if (immediate) {
         process.run();

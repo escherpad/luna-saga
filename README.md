@@ -161,18 +161,18 @@ The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna
 
 ## Todo:
 
-1. [ ] work on fork, because call does not allow async start of process
-1. [ ] refactor call (and apply code). Difference is that call (and apply) do not return `processId`.
-1.     because they finish right away synchronously. On the other hand, `fork` returns a processId
-1.     that could be used to cancel the task.
-1. [ ] All new processes are directly attached to the main store object instead of on some local
-1.     `child_process` pool.
-1. [ ] When parent process is cancelled, look up child processes (by id), then cancel them as well.
-4. [ ] `takeEvery` helper
-5. [ ] `takeLast` helper
-6. [ ] ... many other effects
-7. [ ] `race` flow controller
-8. [ ] `parallel` flow controller
+0. [ ] need to return processId and implement `cancel` effect. (How to allow cancel across generators? (b/c forks are children of parent process.))
+1. [x] finish on `fork`, because `call` does not allow async start of process
+2. [x] refactor call (and apply code). Difference is that call (and apply) do not return `processId`.
+       because they finish right away synchronously. On the other hand, `fork` returns a processId
+       that could be used to cancel the task.
+3. [x] All new processes are attached to a parent `process`.
+4. [ ] When parent process is cancelled, the complete event propagates to child processes (by id).
+5. [ ] `takeEvery` helper
+6. [ ] `takeLast` helper
+7. [ ] ... many other effects
+8. [ ] `race` flow controller
+9. [ ] `parallel` flow controller
 
 ### Done
 1. [x] generator spawning and test => `new Saga(procGenerator())`
@@ -320,6 +320,34 @@ returns a selected part of the store state. If selector is undefined, select ret
 let data = yield select() // <entire store>
 let data = yield select("number") // 1
 ```
+
+#### `fork(generator, [args, [context]])`
+
+```javascript
+function* main() {
+    yield fork(sub);
+    yield call(delay, 100);
+    yield "main-routing";
+    yield call(delay, 100);
+    yield "main-routing end";
+}
+
+function* sub() {
+    console.log("sub-routine: 0");
+    yield call(delay, 100);
+    console.log("sub-routine: 1");
+    yield call(delay, 100);
+    console.log("sub-routine: end");
+    yield call(delay, 100);
+    /* the sub routine should be able to finish execution despite that the parent is already finished*/
+    done()
+}
+
+let saga = new Saga<TestAction>(main());
+saga.log$.subscribe(null, console.error);
+saga.run();
+```
+
 
 **Important Note**: the `store$.update$` stream is a Publish Subject instead of a Behavior Subject.
 This means that the subscriber does not receive current state on subscription.
