@@ -87,12 +87,13 @@ let saga = new Saga<TestAction>(processStub());
 let startDate = Date.now();
 saga.log$.subscribe(
     (_:any)=>console.log("log: ", _),
-    (err)=>console.log("saga error: ", err),
+    null,
     ()=> {
         console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
         done()
     }
 );
+saga.error$.subscribe((err)=>console.log('saga error: ', err));
 saga.action$.subscribe((_:any)=>console.log("action: ", _));
 saga.thunk$.subscribe((_:any)=>console.log("thunk: ", _));
 saga.run();
@@ -142,9 +143,11 @@ saga.thunk$.subscribe((thunk:Thunk)=>store$.dispatch(thunk));
 
 ## The Instance
 
-Calling `new Saga(processGenerator())` returns a `saga` instance. Luna `saga` instance is inhereted from Rxjs.Subject.
+Calling `new Saga(processGenerator())` returns a `saga` instance. Luna `saga` instance inherits from `Rxjs.Subject`.
 
 The `saga.log$` is a (Publish) Subject for all of the yielded expressions from the generator. 
+
+The `saga.error$` is a (Publish) Subject for errors. The reason why we do not use `rxjs` observer's built-in error handling is because there is not a unified hook for handling both error out and completion in a single call-back. As a result, we never error out `saga.log$`, and complete the process when an error is propagated through `saga.error$`. 
 
 - if yielded expression is a simple object, the object is logged.
 - if yielded expression is an action, the object is logged and pushed to `.action$`.
@@ -158,15 +161,16 @@ The `saga.action$` is a (Publish) Subject for out-going actions that you are gon
 
 The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna dispatch back to the store. It also does not have the `getValue()` method.
 
+### Errors
+To log Saga internal errors, subscribe to 
 
 ## Todo:
 
+1. [ ] `spawn` effect, the main difference is that error in this type of fork does not terminate parent process.
+0. [ ] Waht is the problem? The problem with handling errors through `rxjs` is that the default error handling convention kind os sucks. So we now use a dedicated `error$` stream for errors. This way we don't have to jump through the hoops to avoid random subscription to \<Saga\> erroring out unexpectedly. 
+0. [ ] properly handle process completion. 
+0. [ ] figure out how to terminate a process from the outside.
 0. [ ] need to return processId and implement `cancel` effect. (How to allow cancel across generators? (b/c forks are children of parent process.))
-1. [x] finish on `fork`, because `call` does not allow async start of process
-2. [x] refactor call (and apply code). Difference is that call (and apply) do not return `processId`.
-       because they finish right away synchronously. On the other hand, `fork` returns a processId
-       that could be used to cancel the task.
-3. [x] All new processes are attached to a parent `process`.
 4. [ ] When parent process is cancelled, the complete event propagates to child processes (by id).
 5. [ ] `takeEvery` helper
 6. [ ] `takeLast` helper
@@ -183,6 +187,13 @@ The `saga.thunk$` is a (Publish) Subject for out-going thunks that you are gonna
 3. [x] `apply` effect (`call` alias)
 3. [x] `select` effect 
 4. [x] `delay` helper function
+1. [x] finish on `fork`, because `call` does not allow async start of process
+2. [x] refactor call (and apply code). Difference is that call (and apply) do not return `processId`.
+       because they finish right away synchronously. On the other hand, `fork` returns a processId
+       that could be used to cancel the task.
+3. [x] All new processes are attached to a parent's `childProcesses`.
+4. [x] properly handle child process completion. Use `finally` operator to catch both error and completion, remove child
+process from parent without double complete the process. 
 
 
 ## Saga Helpers, Effects, and Flow helpers (Updated Below!)
@@ -323,7 +334,7 @@ let data = yield select("number") // 1
 
 #### `fork(generator, [args, [context]])`
 
-```javascript
+```typescript
 function* main() {
     yield fork(sub);
     yield call(delay, 100);

@@ -1,7 +1,7 @@
 /** Created by ge on 3/27/16. */
 import Saga from "./Saga";
 import {Action} from "luna";
-import {take, dispatch, call, apply, select, fork} from "./effects/effectsHelpers";
+import {take, dispatch, call, apply, select, fork, spawn} from "./effects/effectsHelpers";
 import {Observable} from "rxjs/Observable";
 import {queue} from "rxjs/scheduler/queue";
 import {Store} from "luna/dist/index";
@@ -89,10 +89,8 @@ describe("saga.effects.spec", function () {
             console.log("thunk: ", _);
             store$.dispatch(_);
         });
-        saga.log$.subscribe(
-            (_: any) => console.log("log: ", _),
-            (err: any) => console.log("saga error: ", err)
-        );
+        saga.log$.subscribe((_: any) => console.log("log: ", _));
+        saga.error$.subscribe((err: any) => console.log("saga error: ", err));
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
 
@@ -147,10 +145,8 @@ describe("saga.effects.spec", function () {
             console.log("thunk: ", _);
             store$.dispatch(_);
         });
-        saga.log$.subscribe(
-            (_: any) => console.log("log: ", _),
-            (err: any) => console.log("saga error: ", err)
-        );
+        saga.log$.subscribe((_: any) => console.log("log: ", _));
+        saga.error$.subscribe((err: any) => console.log("saga error: ", err));
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
         saga.next({state: store$.getValue(), action: {type: <string>SAGA_CONNECT_ACTION}});
@@ -172,11 +168,14 @@ describe("saga.effects.spec", function () {
             console.log("test delay >> ", yield call(delay, 100));
             yield call(oneTimeGenerator);
             console.log('processStub has finished running');
+            // delay to make sure that this process terminate after oneTimeGenerator.
+            yield call(delay, 200);
         }
 
         let saga = new Saga<TestAction>(processStub());
         let startDate = Date.now();
-        saga.log$.subscribe(console.log, console.error, () => {
+        saga.error$.subscribe((err) => console.log('saga error: ', err));
+        saga.log$.subscribe(console.log, null, () => {
                 console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
                 done()
             }
@@ -184,28 +183,67 @@ describe("saga.effects.spec", function () {
         saga.run();
     });
 
-    it('simple multi-threaded example', function (done: () => void) {
+    it('fork example', function (done: () => void) {
         function* main() {
             yield fork(sub);
             yield call(delay, 100);
             yield "main-routing";
-            yield call(delay, 100);
+            /* make sure that the parent ends after the child. */
+            // todo: keep parent alive when child is still running.
+            yield call(delay, 150);
             yield "main-routing end";
         }
+
+        const errorStub = new Error('hahaha');
 
         function* sub() {
             console.log("sub-routine: 0");
             yield call(delay, 100);
-            console.log("sub-routine: 1");
-            yield call(delay, 100);
             console.log("sub-routine: end");
             yield call(delay, 100);
             /* the sub routine should be able to finish execution. */
-            done()
+            throw errorStub;
         }
 
         let saga = new Saga<TestAction>(main());
         saga.log$.subscribe(null, console.error);
+        saga.error$.subscribe((err) => {
+            expect(err).toBe(errorStub);
+            done()
+        });
+        saga.run();
+    });
+
+
+    it('spawn example', function (done: () => void) {
+        function* main() {
+            yield spawn(sub);
+            yield call(delay, 100);
+            yield "main-routing";
+            /* make sure that the parent ends after the child. */
+            // todo: keep parent alive when child is still running.
+            yield call(delay, 500);
+            yield "main-routing end";
+        }
+
+        const errorStub = new Error('hahaha');
+
+        function* sub() {
+            console.log("sub-routine: 0");
+            yield call(delay, 100);
+            console.log("sub-routine: end");
+            yield call(delay, 100);
+            throw errorStub;
+            /* the sub routine should be able to finish execution. */
+        }
+
+        let saga = new Saga<TestAction>(main());
+        saga.log$.subscribe(null, console.error);
+        saga.error$.subscribe((err) => {
+            expect(err).not.toBeDefined(err);
+        });
+        saga.subscribe(null, null, () => done());
+
         saga.run();
     });
 });

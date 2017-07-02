@@ -152,10 +152,13 @@ export function callHandler<TState,
             // done: add generator handling logic
             // done: add error handling
             _this.halt();
-            return new Promise((resolve, reject) => _this.forkChildProcess(new Saga(result), reject, () => {
-                _this.resume();
-                resolve();
-            }));
+            return new Promise((resolve, reject) => _this.forkChildProcess(
+                new Saga(result),
+                reject, // how to handle error?
+                () => {
+                    _this.resume();
+                    resolve();
+                }));
         } else if (isPromise(result)) {
             return result;
         } else {
@@ -194,6 +197,46 @@ export function forkHandler<TState,
         if (isIterator(result)) {
             const childProcess = new Saga(result);
             _this.forkChildProcess(childProcess);
+            // todo: return a process id to allow process cancellation
+            return Promise.resolve(childProcess);
+        } else if (isPromise(result)) {
+            return result;
+        } else {
+            return Promise.resolve(result);
+        }
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
+export interface ISpawnEffect extends TEffectBase {
+    context?: any;
+    fn: any;
+    args?: Array<any>
+}
+export const SPAWN: TSym = Sym("SPAWN");
+/** `spawn` starts a child process asynchronously. without bubbling up the errors. This way the parent won't terminate
+ * on child unintercepted errors. */
+export function spawn(fn: any, ...args: any[]): ISpawnEffect {
+    let context: any;
+    if (typeof fn === 'function') {
+        return {type: SPAWN, fn, args};
+    } else {
+        [context, fn] = fn as any[];
+        return {type: SPAWN, fn, args, context};
+    }
+}
+
+export function spawnHandler<TState,
+    T extends StateActionBundle<TState>>(effect: ISpawnEffect,
+                                         _this: Saga<TState>): Promise<any> {
+    let {fn, args, context} = effect;
+    try {
+        let result: any = fn.apply(context, args);
+        // cast iterator `result` to iterable, and use Promise.all to process it.
+        if (isIterator(result)) {
+            const childProcess = new Saga(result);
+            _this.forkChildProcess(childProcess, null, null, true);
             // todo: return a process id to allow process cancellation
             return Promise.resolve(childProcess);
         } else if (isPromise(result)) {

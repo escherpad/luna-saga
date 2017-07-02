@@ -85,7 +85,7 @@ describe("saga.simple.spec: Promise Handling", function () {
         let startDate = Date.now();
         saga.log$.subscribe(
             (_: any): any => console.log("log: ", _),
-            (err): any => console.log("saga error: ", err),
+            null,
             (): any => {
                 console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
             }
