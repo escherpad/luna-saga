@@ -29,7 +29,7 @@
     "url": "https://github.com/escherpad/luna-saga/issues"
   },
   "scripts": {
-    "postinstall": "npm prune && typings install",
+    "develop:install": "npm install+prune && typings install",
     "test": "karma start",
     "clean": "rimraf dist",
     "build:src": "tsc src/index.ts --target es5 --lib  DOM,ES5,ScriptHost,ES2015.Generator,ES2015.Iterable,ES2015.Promise --outDir dist/ --module commonjs --moduleResolution node",
