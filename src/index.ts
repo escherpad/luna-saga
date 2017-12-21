@@ -5,4 +5,4 @@ export {take, dispatch, call, fork, spawn, apply, select} from "./effects/effect
 export {isCallback} from "./util/isCallback";
 export {sagaConnect} from "./sagaConnect";
 export {delay} from "./helpers";
-export {Saga};
+export default Saga;
