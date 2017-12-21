@@ -3,7 +3,6 @@
 
 # test generated files
 src/**.js
-dist
 
 # packages
 typings
