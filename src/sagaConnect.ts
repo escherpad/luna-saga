@@ -3,7 +3,7 @@ import Saga, {SAGA_CONNECT_ACTION} from "./Saga";
 
 export function sagaConnect<TState>(store$: Store<TState>,
                                     iterator: Iterator<any>,
-                                    immediate?: boolean): Saga<TState> {
+                                    immediate: boolean = true): Saga<TState> {
     let process = new Saga<TState>(iterator);
 
     // update$ is a Subject, so no value can be obtained before the first update happens. This
