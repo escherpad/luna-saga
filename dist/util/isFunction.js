@@ -4,3 +4,4 @@ function isFunction(obj) {
     return (typeof obj === "function");
 }
 exports.isFunction = isFunction;
+//# sourceMappingURL=isFunction.js.map

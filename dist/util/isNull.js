@@ -4,3 +4,4 @@ function isNull(obj) {
     return (obj === null && typeof obj === "object");
 }
 exports.isNull = isNull;
+//# sourceMappingURL=isNull.js.map

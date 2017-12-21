@@ -10,3 +10,4 @@ __export(require("./sagaConnect"));
 __export(require("./helpers"));
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Saga_1.default;
+//# sourceMappingURL=index.js.map

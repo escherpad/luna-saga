@@ -6,3 +6,4 @@ function isEffect(obj) {
     return (!!obj && obj.type && effects.indexOf(obj.type) > -1);
 }
 exports.isEffect = isEffect;
+//# sourceMappingURL=isEffect.js.map

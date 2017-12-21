@@ -4,3 +4,4 @@ function isIterator(obj) {
     return (!!obj && typeof obj.next === 'function');
 }
 exports.isIterator = isIterator;
+//# sourceMappingURL=isIterator.js.map

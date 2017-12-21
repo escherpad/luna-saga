@@ -279,3 +279,4 @@ function selectHandler(effect, _this) {
     });
 }
 exports.selectHandler = selectHandler;
+//# sourceMappingURL=effectsHelpers.js.map

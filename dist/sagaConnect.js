@@ -30,3 +30,4 @@ function sagaConnect(store$, iterator, immediate) {
     return process;
 }
 exports.sagaConnect = sagaConnect;
+//# sourceMappingURL=sagaConnect.js.map

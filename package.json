@@ -2,8 +2,8 @@
   "name": "luna-saga",
   "version": "3.1.1",
   "description": "a saga middleware for luna",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
   "directories": {
     "example": "example",
     "test": "tests"
@@ -32,7 +32,7 @@
     "develop:install": "npm install+prune && typings install",
     "test": "karma start",
     "clean": "rimraf dist",
-    "build:src": "tsc src/index.ts --target es5 --lib  DOM,ES5,ScriptHost,ES2015.Generator,ES2015.Iterable,ES2015.Promise --outDir dist/ --module commonjs --moduleResolution node",
+    "build:src": "tsc",
     "clean+build": "npm run clean && npm run build:src",
     "publish:patch": "npm run clean+build && git add . && git commit -m 'BUILD' && git push && npm version patch && npm publish",
     "publish:minor": "npm run clean+build && git add . && git commit -m 'BUILD' && git push && npm version minor && npm publish",

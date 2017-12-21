@@ -25,3 +25,4 @@ function CallbackReturn(res) {
     };
 }
 exports.CallbackReturn = CallbackReturn;
+//# sourceMappingURL=isCallback.js.map

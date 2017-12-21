@@ -6,3 +6,4 @@ function isAction(obj) {
     return (!!obj && typeof obj.type !== "undefined" && isPlainObject(obj) && !obj.__isNotAction);
 }
 exports.isAction = isAction;
+//# sourceMappingURL=isAction.js.map
