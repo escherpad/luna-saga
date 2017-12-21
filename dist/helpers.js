@@ -1,3 +1,4 @@
+"use strict";
 /**
  * Created by ge on 12/7/16.
  *
@@ -5,7 +6,7 @@
  * yield call(delay, 500)
  *
  * */
-"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 function delay(ms) {
     return new Promise(function (resolve) { return setTimeout(function () { return resolve(true); }, ms); });
 }

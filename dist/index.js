@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 /** Created by ge on 12/4/15. */
 var Saga_1 = require("./Saga");
 exports.Saga = Saga_1.default;

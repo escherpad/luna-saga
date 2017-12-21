@@ -1,3 +1,4 @@
+"use strict";
 /** Created by ge on 3/28/16.
  * These effect handling logic are not intended to be pure functions. They are
  * supposed to be aware of the parent thread via the `_this` parameter that is
@@ -34,7 +35,7 @@
  * todo: join(task)
  * todo: cancel(task)
  */
-"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var Sym_1 = require("../util/Sym");
 var isArray_1 = require("../util/isArray");
 var isIterator_1 = require("../util/isIterator");

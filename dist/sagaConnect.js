@@ -1,6 +1,8 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var Saga_1 = require("./Saga");
 function sagaConnect(store$, iterator, immediate) {
+    if (immediate === void 0) { immediate = true; }
     var process = new Saga_1.default(iterator);
     // update$ is a Subject, so no value can be obtained before the first update happens. This
     // is causing problems to the select effect.

@@ -1,9 +1,15 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
 var isCallback_1 = require("./util/isCallback");
 var isPromise_1 = require("./util/isPromise");
 var isAction_1 = require("./util/isAction");
@@ -17,7 +23,7 @@ var effectsHelpers_1 = require("./effects/effectsHelpers");
 var isCallback_2 = require("./util/isCallback");
 var isNull_1 = require("./util/isNull");
 exports.SAGA_CONNECT_ACTION = Sym_1.Sym('SAGA_CONNECT_ACTION');
-var AutoBindSubject = (function (_super) {
+var AutoBindSubject = /** @class */ (function (_super) {
     __extends(AutoBindSubject, _super);
     function AutoBindSubject() {
         var _this = _super.call(this) || this;
@@ -32,7 +38,7 @@ exports.AutoBindSubject = AutoBindSubject;
  * Subject emits a termination signal via `this.term$` when completeded, then completes
  * the stream and then removes all subscribers.
  */
-var ProcessSubject = (function (_super) {
+var ProcessSubject = /** @class */ (function (_super) {
     __extends(ProcessSubject, _super);
     function ProcessSubject() {
         var _this = _super.call(this) || this;
@@ -49,7 +55,7 @@ var ProcessSubject = (function (_super) {
     return ProcessSubject;
 }(AutoBindSubject));
 exports.ProcessSubject = ProcessSubject;
-var Saga = (function (_super) {
+var Saga = /** @class */ (function (_super) {
     __extends(Saga, _super);
     function Saga(proc) {
         var _this = _super.call(this) || this;
@@ -133,6 +139,7 @@ var Saga = (function (_super) {
              correctly.*/
             try {
                 yielded = this.process.throw(err);
+                /* if an exception is thrown, `yield` would be undefined */
             }
             catch (e) {
                 /* print error, which automatically completes the process.*/
@@ -176,6 +183,8 @@ var Saga = (function (_super) {
         this.log$.next(yielded.value);
         var isSynchronous = true;
         if (isUndefined_1.isUndefined(yielded.value)) {
+            // What the generator gets when it `const variable = yield;`.
+            // we can pass back a callback function if we want.
         }
         else if (isFunction_1.isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
@@ -298,6 +307,5 @@ var Saga = (function (_super) {
     };
     return Saga;
 }(ProcessSubject));
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Saga;
 //# sourceMappingURL=Saga.js.map

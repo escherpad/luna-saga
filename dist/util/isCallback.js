@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 /** Created by ge on 4/1/16. */
 var Sym_1 = require("./Sym");
 var $CALLBACK = Sym_1.Sym("CALLBACK");
