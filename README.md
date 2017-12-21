@@ -59,7 +59,7 @@ references:
 You can do: 
 
 ```typescript
-import {Saga, sagaConnect} from "luna-saga";
+import Saga, {sagaConnect} from "luna-saga";
 function thunk():()=>Action {
     return () => {
         return {type: "DEC"};
