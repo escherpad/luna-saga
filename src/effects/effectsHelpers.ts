@@ -39,7 +39,6 @@
 import {Sym, TSym} from "../util/Sym";
 import {TEffectBase} from "./interfaces";
 import {Action, StateActionBundle} from "luna";
-import {Subject} from "rxjs";
 import {TSaga} from "../interfaces";
 import {isArray} from "../util/isArray";
 import {isIterator} from "../util/isIterator";
