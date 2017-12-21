@@ -87,6 +87,7 @@ export function takeHandler<T extends StateActionBundle<any>>(parameters: { effe
 export interface IDispatchEffect extends TEffectBase {
     action: Action;
 }
+
 export const DISPATCH: TSym = Sym("DISPATCH");
 
 export function dispatch(action: Action): IDispatchEffect {
@@ -126,6 +127,7 @@ export interface ICallEffect extends TEffectBase {
     fn: any;
     args?: Array<any>
 }
+
 export const CALL: TSym = Sym("CALL");
 
 /** `call` starts another child process synchronously. The main process will restart after the new child process
@@ -173,7 +175,9 @@ export interface IForkEffect extends TEffectBase {
     fn: any;
     args?: Array<any>
 }
+
 export const FORK: TSym = Sym("FORK");
+
 /** `fork` starts a child process asynchronously. The main process will not block.
  * */
 export function fork(fn: any, ...args: any[]): IForkEffect {
@@ -191,15 +195,15 @@ export function forkHandler<TState,
                                          _this: Saga<TState>): Promise<any> {
     let {fn, args, context} = effect;
     try {
-        let result: any = fn.apply(context, args);
+        let result: Iterator<TState> | Promise<any> = fn.apply(context, args);
         // cast iterator `result` to iterable, and use Promise.all to process it.
         if (isIterator(result)) {
-            const childProcess = new Saga(result);
+            const childProcess: Saga<TState> = new Saga(result as Iterator<TState>);
             _this.forkChildProcess(childProcess);
             // todo: return a process id to allow process cancellation
             return Promise.resolve(childProcess);
         } else if (isPromise(result)) {
-            return result;
+            return result as Promise<any>;
         } else {
             return Promise.resolve(result);
         }
@@ -213,7 +217,9 @@ export interface ISpawnEffect extends TEffectBase {
     fn: any;
     args?: Array<any>
 }
+
 export const SPAWN: TSym = Sym("SPAWN");
+
 /** `spawn` starts a child process asynchronously. without bubbling up the errors. This way the parent won't terminate
  * on child unintercepted errors. */
 export function spawn(fn: any, ...args: any[]): ISpawnEffect {
@@ -231,15 +237,15 @@ export function spawnHandler<TState,
                                          _this: Saga<TState>): Promise<any> {
     let {fn, args, context} = effect;
     try {
-        let result: any = fn.apply(context, args);
+        let result: Iterator<TState> | Promise<any> = fn.apply(context, args);
         // cast iterator `result` to iterable, and use Promise.all to process it.
         if (isIterator(result)) {
-            const childProcess = new Saga(result);
+            const childProcess: Saga<TState> = new Saga(result as Iterator<TState>);
             _this.forkChildProcess(childProcess, null, null, true);
             // todo: return a process id to allow process cancellation
             return Promise.resolve(childProcess);
         } else if (isPromise(result)) {
-            return result;
+            return result as Promise<any>;
         } else {
             return Promise.resolve(result);
         }
@@ -257,6 +263,7 @@ export function apply(context: any, fn: any, ...args: any[]): ICallEffect {
 export interface ISelectEffect extends TEffectBase {
     selector?: string;
 }
+
 export const SELECT: TSym = Sym("SELECT");
 
 export function select(selector?: string): ISelectEffect {
