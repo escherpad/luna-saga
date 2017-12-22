@@ -9,7 +9,7 @@ export declare class AutoBindSubject<T> extends Subject<T> {
     constructor();
 }
 /** ProcessSubject
- * Subject emits a termination signal via `this.term$` when completeded, then completes
+ * Subject emits a termination signal via `this.term$` when completed, then completes
  * the stream and then removes all subscribers.
  */
 export declare class ProcessSubject<T> extends AutoBindSubject<T> {

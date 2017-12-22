@@ -28,14 +28,14 @@ var AutoBindSubject = /** @class */ (function (_super) {
     function AutoBindSubject() {
         var _this = _super.call(this) || this;
         /* bind next method */
-        _this.next = _super.prototype.next.bind(_this);
+        _this.next = _this.next.bind(_this);
         return _this;
     }
     return AutoBindSubject;
 }(rxjs_1.Subject));
 exports.AutoBindSubject = AutoBindSubject;
 /** ProcessSubject
- * Subject emits a termination signal via `this.term$` when completeded, then completes
+ * Subject emits a termination signal via `this.term$` when completed, then completes
  * the stream and then removes all subscribers.
  */
 var ProcessSubject = /** @class */ (function (_super) {

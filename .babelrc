@@ -1,5 +1,15 @@
 {
-  "presets": ["es2015", "stage-0", "react"],
-  "plugins": ["transform-decorators-legacy"]
+  "presets": [
+    "stage-0",
+    "es2015",
+    "react",
+    "stage-2",
+    "flow",
+    "env"
+  ],
+  "plugins": [
+    "transform-class-properties",
+    "transform-decorators-legacy",
+    "transform-runtime"
+  ]
 }
-
