@@ -25,12 +25,12 @@ export class AutoBindSubject<T> extends Subject<T> {
     constructor() {
         super();
         /* bind next method */
-        this.next = super.next.bind(this);
+        this.next = this.next.bind(this);
     }
 }
 
 /** ProcessSubject
- * Subject emits a termination signal via `this.term$` when completeded, then completes
+ * Subject emits a termination signal via `this.term$` when completed, then completes
  * the stream and then removes all subscribers.
  */
 export class ProcessSubject<T> extends AutoBindSubject<T> {
