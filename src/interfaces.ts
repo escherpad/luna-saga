@@ -6,8 +6,12 @@ import {ProcessSubject} from "./Saga";
 export interface TSaga<T> extends ProcessSubject<T> {
     replay$: Subject<T>;
     log$: Subject<any>;
-    error$: Subject<any>;
     action$: Subject<Action>;
     thunk$: Subject<Thunk>;
     run: () => void;
+    // below exist on super.
+    // next: (obj: any) => void;
+    // error: (err: any) => void;
+    // complete: () => void;
+    // destroy: () => void;
 }

@@ -3,6 +3,9 @@ import { TSym } from "./Sym";
 export declare const $CALLBACK_START: TSym;
 export declare const $CALLBACK_RETURN: TSym;
 export declare const $CALLBACK_THROW: TSym;
+export interface ICallbackFunc {
+    (res?: any, err?: any): void;
+}
 export interface ICallback {
     type: TSym;
     [key: string]: any | undefined;

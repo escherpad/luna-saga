@@ -57,24 +57,33 @@ export function take(actionType: any): ITakeEffect {
     return {type: TAKE, actionType};
 }
 
-export function takeHandler<T extends StateActionBundle<any>>(parameters: { effect: ITakeEffect, _this: ProcessSubject<T> }): Promise<any> {
-    let {effect, _this} = parameters;
+export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffect, _this: TSaga<T>): Promise<any> {
+    let actionType: any = effect.actionType;
     return new Promise((resolve, reject) => {
         let isResolved = false;
         _this
-            .first((saga: T): boolean => {
-                if (!saga.action.type) {
-                    return false;
-                } else if (saga.action.type === effect.actionType) {
-                    return true;
-                } else if (isArray(effect.actionType)) {
-                    return effect.actionType.indexOf(saga.action.type) > -1;
-                } else return (typeof effect.actionType !== 'string' && !!saga.action.type.match(effect.actionType));
+            .first((update: StateActionBundle<any>): boolean => {
+                let result = false;
+                try {
+                    if (!update.action.type) {
+                        result = false;
+                    } else if (update.action.type === actionType) {
+                        result = true;
+                    } else if (isArray(actionType)) {
+                        result = actionType.indexOf(update.action.type) > -1;
+                    } else {
+                        result = (actionType instanceof RegExp && !!update.action.type.match(actionType));
+                    }
+                } catch (e) {
+                    console.warn(e);
+                }
+                console.log(result);
+                return result;
             })
             .subscribe(
-                (saga: T) => {
+                (update: T) => {
                     isResolved = true;
-                    resolve(saga);
+                    resolve(update);
                 }, (err: any) => {
                     isResolved = true;
                     reject(err);

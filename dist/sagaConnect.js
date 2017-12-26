@@ -8,15 +8,15 @@ function sagaConnect(store$, iterator, immediate) {
     // is causing problems to the select effect.
     // connect the process to the update bundle stream of the store.
     // This subscription should be destroyed when process finishes.
-    store$.update$.takeUntil(process.term$).subscribe(process);
+    // store$.update$.takeUntil(process.term$).subscribe(process);
+    process.subscribeTo(store$.update$);
     // connect the action$ and thunk$ stream to the main store.
     // These streams will complete on process termination
     // since dispatch is just a function, store$ won't be affected (completed).
     // store is usually long-lived, so we don't need to use take until.
+    // these streams are just notifying the dispatch function.
     process.thunk$.subscribe(store$.dispatch);
     process.action$.subscribe(store$.dispatch);
-    // process.log$.subscribe();
-    // process.error$.subscribe();
     if (immediate) {
         process.run();
         // right after run, emit a special connect action, which transmits

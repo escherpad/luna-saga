@@ -6,6 +6,10 @@ export const $CALLBACK_START: TSym = Sym("$CALLBACK_START");
 export const $CALLBACK_RETURN: TSym = Sym("$CALLBACK_RETURN");
 export const $CALLBACK_THROW: TSym = Sym("$CALLBACK_THROW");
 
+export interface ICallbackFunc {
+    (res?: any, err?: any): void;
+}
+
 export interface ICallback {
     type: TSym;
     [key: string]: any | undefined;

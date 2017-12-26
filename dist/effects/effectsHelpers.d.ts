@@ -38,17 +38,14 @@ import { TSym } from "../util/Sym";
 import { TEffectBase } from "./interfaces";
 import { Action, StateActionBundle } from "luna";
 import { TSaga } from "../interfaces";
-import Saga, { ProcessSubject } from "../Saga";
+import Saga from "../Saga";
 export declare const EFFECT: TSym;
 export interface ITakeEffect extends TEffectBase {
     actionType: any;
 }
 export declare const TAKE: TSym;
 export declare function take(actionType: any): ITakeEffect;
-export declare function takeHandler<T extends StateActionBundle<any>>(parameters: {
-    effect: ITakeEffect;
-    _this: ProcessSubject<T>;
-}): Promise<any>;
+export declare function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffect, _this: TSaga<T>): Promise<any>;
 export interface IDispatchEffect extends TEffectBase {
     action: Action;
 }

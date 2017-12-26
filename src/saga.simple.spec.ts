@@ -1,7 +1,7 @@
 /** Created by ge on 3/27/16. */
 import Saga from "./Saga";
 import {Action} from "luna";
-import {CALLBACK} from "./util/isCallback";
+import {CALLBACK, ICallbackFunc} from "./util/isCallback";
 import {isAction} from "./util/isAction";
 import {isFunction} from "./util/isFunction";
 
@@ -9,22 +9,23 @@ interface TestAction extends Action {
     payload?: any;
 }
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 200;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 100;
 describe("saga.simple.spec: Promise Handling", function () {
     it("process runner should work", function (done: () => void) {
         let thunk_has_ran = false;
+        let result;
 
         function thunk(): Action {
             thunk_has_ran = true;
             return {type: "DEC"};
         }
 
-        function dummyAsyncFunc(cb: (err: any, res?: any) => void) {
-            cb(null, "** async RESULT **");
+        function dummyAsyncFunc(cb: ICallbackFunc) {
+            cb("** async RESULT **");
         }
 
-        function dummyAsyncFuncThrowingError(cb: (err: any, res?: any) => void) {
-            cb("** async ERROR **");
+        function dummyAsyncFuncThrowingError(cb: ICallbackFunc) {
+            cb(null, "** async ERROR **");
         }
 
         function* idMaker(): Iterator<any> {
@@ -43,7 +44,7 @@ describe("saga.simple.spec: Promise Handling", function () {
             // there is a store with `store.dispatch` method.
             // In this case, because no store$ is attached, this thunk
             // is not executed. And we need to make sure that is the case.
-            let result = yield thunk;
+            result = yield thunk;
             expect(result).toBe(thunk);
             expect(thunk_has_ran).toBe(false);
 
@@ -59,9 +60,9 @@ describe("saga.simple.spec: Promise Handling", function () {
             try {
                 result = yield dummyAsyncFuncThrowingError(yield CALLBACK);
             } catch (err) {
+                console.warn(err);
                 expect(err).toBe("** async ERROR **");
             }
-
 
             result = yield Promise.resolve(1);
             expect(result).toBe(1);
@@ -98,6 +99,9 @@ describe("saga.simple.spec: Promise Handling", function () {
             if (!isFunction(thunk)) throw console.error('thunk is ill formed.', thunk);
             else console.log("Thunk: ", thunk)
         });
+        saga.subscribe({error:(err: any): any => {
+            console.warn("saga.error$", err);
+        }});
         saga.run();
     });
 });

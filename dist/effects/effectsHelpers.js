@@ -47,27 +47,36 @@ function take(actionType) {
     return { type: exports.TAKE, actionType: actionType };
 }
 exports.take = take;
-function takeHandler(parameters) {
-    var effect = parameters.effect, _this = parameters._this;
+function takeHandler(effect, _this) {
+    var actionType = effect.actionType;
     return new Promise(function (resolve, reject) {
         var isResolved = false;
         _this
-            .first(function (saga) {
-            if (!saga.action.type) {
-                return false;
+            .first(function (update) {
+            var result = false;
+            try {
+                if (!update.action.type) {
+                    result = false;
+                }
+                else if (update.action.type === actionType) {
+                    result = true;
+                }
+                else if (isArray_1.isArray(actionType)) {
+                    result = actionType.indexOf(update.action.type) > -1;
+                }
+                else {
+                    result = (actionType instanceof RegExp && !!update.action.type.match(actionType));
+                }
             }
-            else if (saga.action.type === effect.actionType) {
-                return true;
+            catch (e) {
+                console.warn(e);
             }
-            else if (isArray_1.isArray(effect.actionType)) {
-                return effect.actionType.indexOf(saga.action.type) > -1;
-            }
-            else
-                return (typeof effect.actionType !== 'string' && !!saga.action.type.match(effect.actionType));
+            console.log(result);
+            return result;
         })
-            .subscribe(function (saga) {
+            .subscribe(function (update) {
             isResolved = true;
-            resolve(saga);
+            resolve(update);
         }, function (err) {
             isResolved = true;
             reject(err);

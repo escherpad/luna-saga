@@ -12,6 +12,14 @@ Luna-saga is a saga runner built for Luna, a reactive redux implementation based
 
 `luna-saga` is written in TypeScript with Angular2 in mind. You can directly import it to your ng2 project. To use angular's dependency injection, you can write a simple provider. Personally I prefer to keep things uncoupled from the framework as much as possible, this is why `luna-saga` is written with Angular2 in mind but does not depend on it.
 
+## For React Developers~
+
+**TLDR;** I work with react everyday using `luna` and `luna-saga` (when I'm not training deep reinforcement learning agents and writing papers.)
+
+After spending two month with Angular 2, I decided to work with React. The functional pattern is much easier to work with compared with the DOM-parser pattern of Angular 2. And the ability to use ES6 with flow-type instead of Typescript made things a lot more portable. In particular it is easier to debug code with node.js, since the code does not need to be transpiled with the `-r babel-register` flag. Even es6 module is supported out of the box.
+
+The ability to debug without have to read call stack in a transpiled code base is a must for good developer experience.
+
 ## Wanna use ES6 Generators to build Sagas in your project, but also want to use rxjs?
 
 Luna-saga is the reactive operator for Luna.
@@ -22,19 +30,19 @@ Note that `from` returns all of the yielded results but does not handle Thunk an
 Meanwhile `spawn` returns the returned value at the end but it handles yield promise and thunk expressions properly.
 
 ```javascript
-var Rx = require('rx');
+import {Observable} from "rxjs";
 
-var thunk = function (val) {
+const thunk = function (val) {
   return function (cb) {
     cb(null, val);
   };
 };
 
-var saga = Rx.Observable.spawn(function* () {
-  var v = yield thunk(12);
-  var w = yield [24];
-  var x = yield Rx.Observable.just(42);
-  var z = yield Promise.resolve(78);
+const spawned = Observable.spawn(function* () {
+  const v = yield thunk(12);
+  const w = yield [24];
+  const x = yield Rx.Observable.just(42);
+  const z = yield Promise.resolve(78);
   return v + w[0] + x + y + z;
 });
 
@@ -93,7 +101,7 @@ saga.log$.subscribe(
         done()
     }
 );
-saga.error$.subscribe((err)=>console.log('saga error: ', err));
+saga.subscribe({error:(err: any) => console.log("saga error: ", err)});
 saga.action$.subscribe((_:any)=>console.log("action: ", _));
 saga.thunk$.subscribe((_:any)=>console.log("thunk: ", _));
 saga.run();
@@ -147,7 +155,8 @@ Calling `new Saga(processGenerator())` returns a `saga` instance. Luna `saga` in
 
 The `saga.log$` is a (Publish) Subject for all of the yielded expressions from the generator. 
 
-The `saga.error$` is a (Publish) Subject for errors. The reason why we do not use `rxjs` observer's built-in error handling is because there is not a unified hook for handling both error out and completion in a single call-back. As a result, we never error out `saga.log$`, and complete the process when an error is propagated through `saga.error$`. 
+~~The `saga.error$` is a (Publish) Subject for errors. The reason why we do not use `rxjs` observer's built-in error handling is because there is not a unified hook for handling both error out and completion in a single call-back. As a result, we never error out `saga.log$`, and complete the process when an error is propagated through `saga.error$`. ~~
+We are using the standard `rxjs` `Subject.subscribe({error: CallBack})` for subscribing to errors. A single uncought error leads the Saga to stop running.
 
 - if yielded expression is a simple object, the object is logged.
 - if yielded expression is an action, the object is logged and pushed to `.action$`.

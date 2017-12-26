@@ -1,5 +1,5 @@
 /** Created by ge on 3/27/16. */
-import Saga from "./Saga";
+import Saga, {CHILD_ERROR} from "./Saga";
 import {Action} from "luna";
 import {take, dispatch, call, apply, select, fork, spawn} from "./effects/effectsHelpers";
 import {Observable} from "rxjs/Observable";
@@ -13,6 +13,7 @@ import {isAction} from "./util/isAction";
 interface TestState {
     number?: number;
 }
+
 interface TestAction extends Action {
     payload?: any;
 }
@@ -21,14 +22,11 @@ describe("saga.effects.spec", function () {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 4000;
     it("take effect allow yield on a certain type of actions", function (done: () => void) {
 
-        function thunk(): () => Action {
-            return () => {
-                return {type: "DEC"};
-            }
-        }
-
         function* idMaker(): Iterator<any> {
             let update: any;
+            update = yield take(/I(.*)STORE$/);
+            console.log('0 *****', update);
+            expect(update).toEqual({state: {number: 0}, action: {type: "INIT_STORE"}});
             update = yield take("INC");
             console.log('1 *****', update);
             expect(update).toEqual({state: {number: 1}, action: {type: "INC"}});
@@ -90,16 +88,26 @@ describe("saga.effects.spec", function () {
             store$.dispatch(_);
         });
         saga.log$.subscribe((_: any) => console.log("log: ", _));
-        saga.error$.subscribe((err: any) => console.log("saga error: ", err));
+        saga.subscribe({error: (err: any) => console.log("saga error: ", err)});
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
 
-        store$.dispatch(testActions[0]);
-        store$.dispatch(testActions[1]);
-        store$.dispatch(testActions[2]);
-        store$.dispatch(testActions[3]);
-        store$.dispatch(testActions[4]);
-        store$.dispatch(testActions[4]);
+        function run(action) {
+            return function runHandle() {
+                return new Promise((resolve, _) => {
+                    setTimeout(() => {
+                        store$.dispatch(action);
+                        resolve()
+                    }, 10);
+                });
+            };
+        }
+
+        run(testActions[0])()
+            .then(run(testActions[1]))
+            .then(run(testActions[2]))
+            .then(run(testActions[3]))
+            .then(run(testActions[4]))
     });
 
     it("test select effect corner cases", function (done: () => void) {
@@ -146,7 +154,7 @@ describe("saga.effects.spec", function () {
             store$.dispatch(_);
         });
         saga.log$.subscribe((_: any) => console.log("log: ", _));
-        saga.error$.subscribe((err: any) => console.log("saga error: ", err));
+        saga.subscribe({error: (err: any) => console.log("saga error: ", err)});
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
         saga.next({state: store$.getValue(), action: {type: <string>SAGA_CONNECT_ACTION}});
@@ -174,7 +182,7 @@ describe("saga.effects.spec", function () {
 
         let saga = new Saga<TestAction>(processStub());
         let startDate = Date.now();
-        saga.error$.subscribe((err) => console.log('saga error: ', err));
+        saga.subscribe({error: (err: any) => console.log("saga error: ", err)});
         saga.log$.subscribe(console.log, null, () => {
                 console.log(`saga execution took ${(Date.now() - startDate) / 1000} seconds`);
                 done()
@@ -194,22 +202,27 @@ describe("saga.effects.spec", function () {
             yield "main-routing end";
         }
 
-        const errorStub = new Error('hahaha');
+        const errorStub = new Error('errorStub, should error out b/c throw is un-catched inside generator.');
 
         function* sub() {
             console.log("sub-routine: 0");
             yield call(delay, 100);
-            console.log("sub-routine: end");
+            console.log("sub-routine: delayed");
             yield call(delay, 100);
             /* the sub routine should be able to finish execution. */
+            console.log("sub-routine: throw");
             throw errorStub;
+            // console.log("sub-routine: end << should never hit here.");
         }
 
         let saga = new Saga<TestAction>(main());
         saga.log$.subscribe(null, console.error);
-        saga.error$.subscribe((err) => {
-            expect(err).toBe(errorStub);
-            done()
+        saga.subscribe({
+            error: (err) => {
+                expect(err.type).toBe(CHILD_ERROR);
+                expect(err.err).toBe(errorStub);
+                done();
+            }
         });
         saga.run();
     });
@@ -239,8 +252,10 @@ describe("saga.effects.spec", function () {
 
         let saga = new Saga<TestAction>(main());
         saga.log$.subscribe(null, console.error);
-        saga.error$.subscribe((err) => {
-            expect(err).not.toBeDefined(err);
+        saga.subscribe({
+            error: (err) => {
+                expect(err).not.toBeDefined(err);
+            }
         });
         saga.subscribe(null, null, () => done());
 

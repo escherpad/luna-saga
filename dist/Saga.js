@@ -42,41 +42,56 @@ var ProcessSubject = /** @class */ (function (_super) {
     __extends(ProcessSubject, _super);
     function ProcessSubject() {
         var _this = _super.call(this) || this;
+        _this.subscriptions = [];
         _this._term$ = new rxjs_1.Subject();
+        /* term$ is used to signal other observers of the end of ProcessSubject */
         _this.term$ = _this._term$.concat(rxjs_1.Observable.of(true));
+        _this.destroy = _this.destroy.bind(_this);
+        /* call this.distroy on complete and error */
+        _this.subscribe(null, _this.destroy, _this.destroy);
         return _this;
     }
-    ProcessSubject.prototype.complete = function () {
-        this._term$.complete();
-        _super.prototype.complete.call(this);
+    ProcessSubject.prototype.subscribeTo = function ($) {
+        this.subscriptions.push($.takeUntil(this.term$).subscribe(this.next));
+    };
+    /* finally is an operator not a handle. Destroy doesn't exist on Sujects, so it is safe to use it here. */
+    ProcessSubject.prototype.destroy = function () {
+        this.subscriptions.forEach(function (s) { return s.unsubscribe(); });
+        this.subscriptions.length = 0;
         this._term$ = null;
         this.term$ = null;
     };
     return ProcessSubject;
 }(AutoBindSubject));
 exports.ProcessSubject = ProcessSubject;
+exports.CHILD_ERROR = Sym_1.Sym("CHILD_ERROR");
+var ChildErr = /** @class */ (function () {
+    function ChildErr(err) {
+        this.type = exports.CHILD_ERROR;
+        this.err = err;
+    }
+    ;
+    return ChildErr;
+}());
 var Saga = /** @class */ (function (_super) {
     __extends(Saga, _super);
     function Saga(proc) {
         var _this = _super.call(this) || this;
         _this.isHalted = false;
         _this.childProcesses = [];
-        _this.complete = _this.__complete.bind(_this);
-        _this.destroy = _this.__destroy.bind(_this);
+        _this.nextYield = _this._nextYield.bind(_this);
+        _this.evaluateYield = _this._evaluateYield.bind(_this);
+        _this.nextResult = _this._nextResult.bind(_this);
+        _this.nextThrow = _this._throw.bind(_this);
         /* this is just the process generator */
         _this.process = proc;
-        /* Various signal streams */
+        /* Various signal streams. OUTPUT ONLY. Use internal error/complete handle for signaling. */
         _this.log$ = new AutoBindSubject();
-        _this.error$ = new AutoBindSubject();
         _this.action$ = new AutoBindSubject();
         _this.thunk$ = new AutoBindSubject();
-        /* use take(1) to postpone the event. */
-        _this.error$.delay(0.5).subscribe(_this.complete);
         /* use a replay subject to maintain state for `select` operator.*/
         _this.replay$ = new rxjs_1.ReplaySubject(1);
         _this.subscribe(_this.replay$);
-        // clean up after all complete hooks are ran.
-        _this.delay(0.5).subscribe(null, null, _this.destroy);
         return _this;
     }
     Saga.prototype.next = function (value) {
@@ -85,14 +100,14 @@ var Saga = /** @class */ (function (_super) {
         // route the bundles into child processes.
         if (!this.isHalted)
             _super.prototype.next.call(this, value); // notifies the super Subject Object.
-        if (this.childProcesses.length) {
+        if (this.childProcesses) {
             this.childProcesses.forEach(function (proc) { return proc.next(value); });
         }
     };
     Saga.prototype.run = function () {
         if (typeof this.process === "undefined")
             return this;
-        this._nextYield();
+        this.nextYield();
         return this;
     };
     Saga.prototype.halt = function () {
@@ -110,142 +125,141 @@ var Saga = /** @class */ (function (_super) {
         else
             this.childProcesses.splice(ind);
     };
-    Saga.prototype.__destroy = function () {
+    Saga.prototype.destroy = function () {
+        /* called by binding in ProcessSubject. destroy all references to release from memory */
         this.process = null;
         this.replay$ = null;
         this.log$ = null;
-        this.error$ = null;
         this.thunk$ = null;
         this.action$ = null;
         this.childProcesses = null;
+        _super.prototype.destroy.call(this);
     };
-    ;
-    Saga.prototype.__complete = function () {
-        /* Complete the parent first, to make sure that `this.term$` signals termination. */
-        _super.prototype.complete.call(this);
+    Saga.prototype.error = function (err) {
         this.log$.complete();
-        this.error$.complete();
+        /* when termination is triggered by error$ stream, error$.complete double call raise exception. */
         this.thunk$.complete();
         this.action$.complete();
+        /* Complete the parent first, to make sure that `this.term$` signals termination. */
+        _super.prototype.error.call(this, err);
+    };
+    Saga.prototype.complete = function () {
+        this.log$.complete();
+        /* when termination is triggered by error$ stream, error$.complete double call raise exception. */
+        this.thunk$.complete();
+        this.action$.complete();
+        /* Complete the parent first, to make sure that `this.term$` signals termination. */
+        _super.prototype.complete.call(this);
+    };
+    Saga.prototype._nextResult = function (res) {
+        //todo: refactor _nextYield
+        return this.nextYield(res);
+    };
+    Saga.prototype._throw = function (err) {
+        //todo: refactor _nextYield
+        return this.nextYield(null, err);
     };
     Saga.prototype._nextYield = function (res, err) {
-        var _this = this;
         var yielded;
         if (this.isStopped)
             return console.warn('Saga: yield call back occurs after process termination.');
         /* Handle Errors */
         if (typeof err !== "undefined" && !isNull_1.isNull(err)) {
-            /* [DONE] we need to handle the error here in case the generator does not handle it
-             correctly.*/
+            /* [DONE] we need to handle the error here in case the generator does not handle it correctly.*/
             try {
+                /* Do NOT terminate, since this error handling happens for callback functions */
                 yielded = this.process.throw(err);
-                /* if an exception is thrown, `yield` would be undefined */
             }
             catch (e) {
+                console.warn('THIS SHOULD NEVER BE HIT');
                 /* print error, which automatically completes the process.*/
-                return this.error$.next(e);
+                return this.error(e);
             }
         }
         else {
-            /* if an error occur not through `yield`, we will need to interceptt
-             it here.*/
+            /* if an error occur not through `yield`, we will need to intercept it here.*/
             try {
                 yielded = this.process.next(res);
             }
             catch (e) {
-                /* Since this error did not come from `yield` (this.process.next),
-                 * we can not throw it back. We will just notify `this.error$`. */
-                return this.error$.next(e);
+                this.error(e);
+                this.process.throw(e);
+                /* the Generator is already running error usually means multiple recursive next() calls happened */
+                console.error('THIS SHOULD NEVER SHOW B/C OF THROW');
             }
         }
         /* Now evaluate the yielded result... */
+        this.evaluateYield(yielded);
+    };
+    Saga.prototype._evaluateYield = function (yielded) {
+        var _this = this;
         if (!yielded) {
             /* should never hit here. Also <saga> should be completed at this point
              * already, so we can't log to error$ because it is already `null`.
              * We log to console instead.
+             * If this is hit, something is wrong.
              */
-            console.error('`yielded` is undefined. This is likely a problem with ' +
-                '`luna-saga`.');
+            console.error('`yielded` is undefined. This is likely a problem with `luna-saga`.');
+            throw "`yielded` need to exist";
         }
-        else if (yielded.done) {
-            // call process destroy, which complete various streams.
-            this._evaluateYield(yielded, this.complete);
+        if (!!yielded.done) {
+            /* Done results *always* have value undefined. */
+            this.complete();
+            return;
         }
-        else {
-            this._evaluateYield(yielded, function (res, err) { return _this._nextYield(res, err); });
-        }
-        return this;
-    };
-    Saga.prototype._evaluateYield = function (yielded, nextYield) {
-        var _this = this;
-        if (!yielded)
-            this.error$.next('`yielded` need to exist');
         this.log$.next(yielded.value);
-        var isSynchronous = true;
         if (isUndefined_1.isUndefined(yielded.value)) {
             // What the generator gets when it `const variable = yield;`.
             // we can pass back a callback function if we want.
+            setImmediate(function () { return _this.nextResult(yielded.value); });
         }
         else if (isFunction_1.isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
+            setImmediate(function () { return _this.nextResult(yielded.value); });
         }
         else if (isCallback_1.isCallback(yielded.value)) {
-            isSynchronous = false;
             // no need to save the yielded result.
             this.log$.next(isCallback_2.CALLBACK_START);
-            this.process.next(function (err, res) {
-                if (err) {
+            this.process.next(function (res, err) {
+                /* synchronous next call */
+                if (!!err) {
                     _this.log$.next(isCallback_2.CallbackThrow(err));
+                    // need to break the callstack b/c still inside process.next call
+                    setImmediate(function () { return _this.nextThrow(err); });
                 }
                 else {
                     _this.log$.next(isCallback_2.CallbackReturn(res));
+                    // need to break the callstack b/c still inside process.next call
+                    setImmediate(function () { return _this.nextResult(res); });
                 }
-                setImmediate(function () {
-                    nextYield(res, err);
-                });
             });
         }
         else if (isPromise_1.isPromise(yielded.value)) {
-            isSynchronous = false;
             var p = yielded.value;
-            p.then(function (res) {
-                setImmediate(function () {
-                    nextYield(res);
-                });
-            }, function (err) {
-                setImmediate(function () {
-                    nextYield(null, err);
-                });
-            });
+            p.then(this.nextResult, this.nextThrow);
         }
         else if (isEffect_1.isEffect(yielded.value)) {
-            isSynchronous = false;
-            this._executeEffect(yielded.value).then(function (res) {
-                nextYield(res);
-            }, function (err) {
-                nextYield(null, err);
-            });
+            /* Promise.then call is in fact asynchronous. This causes consecutive `take`s to miss store actions fired
+            synchronously. */
+            this._executeEffect(yielded.value).then(this.nextResult, this.nextThrow);
         }
-        else if (isAction_1.isAction(yielded.value)) {
-            this.action$.next(yielded.value);
+        else {
+            if (isAction_1.isAction(yielded.value))
+                this.action$.next(yielded.value);
+            /** speed comparison for 1000 yields:
+             * no callback: 0.110 s, but stack overflow at 3900 calls on Chrome.
+             * setTimeout: 4.88 s.
+             * setZeroTimeout: 0.196 s, does not stack overflow.
+             * setImmediate cross-platform package: 0.120 s. fantastic.
+             */
+            setImmediate(function () { return _this.nextResult(yielded.value); });
         }
-        /** speed comparison for 1000 yields:
-         * no callback: 0.110 s, but stack overflow at 3900 calls on Chrome.
-         * setTimeout: 4.88 s.
-         * setZeroTimeout: 0.196 s, does not stack overflow.
-         * setImmediate cross-platform package: 0.120 s. fantastic.
-         */
-        if (isSynchronous)
-            setImmediate(function () {
-                nextYield(yielded.value);
-            });
-        return this;
     };
     Saga.prototype._executeEffect = function (effect) {
         var type = effect.type;
         if (type === effectsHelpers_1.TAKE) {
             var _effect = effect;
-            return effectsHelpers_1.takeHandler({ effect: _effect, _this: this });
+            return effectsHelpers_1.takeHandler(_effect, this);
         }
         else if (type === effectsHelpers_1.FORK) {
             var _effect = effect;
@@ -275,28 +289,25 @@ var Saga = /** @class */ (function (_super) {
         return this.value;
     };
     /** Starts a single child process, stop the current process, and resume afterward. */
-    Saga.prototype.forkChildProcess = function (newProcess, onError, onCompletion, noBubbling) {
+    Saga.prototype.forkChildProcess = function (newProcess, onError, onFinally, noBubbling) {
         var _this = this;
         this.childProcesses.push(newProcess);
         newProcess.action$.takeUntil(this.term$).subscribe(this.action$.next);
         newProcess.thunk$.takeUntil(this.term$).subscribe(this.thunk$.next);
         newProcess.log$.takeUntil(this.term$).subscribe(this.log$.next);
         if (!noBubbling)
-            newProcess.error$.takeUntil(this.term$).subscribe(this.error$.next);
-        /* We complete the process when an error is propagated through the `error$` channel.
-         * In the constructor this channel automatically calls `complete`, so we only need
-         * to have a onComplete handler that removes child processes subscribe to the saga
-         * process.
-         * */
+            newProcess.subscribe({ error: function (err) { return _this.error(new ChildErr(err)); } });
+        /* We complete the process when the newProcess.error(e) is called. */
         if (onError)
-            newProcess.error$.takeUntil(this.term$).subscribe(onError);
-        newProcess.subscribe(null, null, function () {
+            newProcess.takeUntil(this.term$).subscribe({ error: onError });
+        var fin = function () {
             _this.removeChildProcess(newProcess);
             /* release newProcess from memory here. */
             newProcess = null;
-            if (typeof onCompletion == 'function')
-                onCompletion();
-        });
+            if (typeof onFinally == 'function')
+                onFinally();
+        };
+        newProcess.subscribe({ error: fin, complete: fin });
         // trigger the first subscription event so that child process has the current state(and action).
         newProcess.run();
         var currentValue = this.getValue();
