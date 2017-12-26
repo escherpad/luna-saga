@@ -91,7 +91,7 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
         super();// replay just no past event, just broadcast new ones.
         this.nextYield = this._nextYield.bind(this);
         this.evaluateYield = this._evaluateYield.bind(this);
-        this.nextResult = this._nextResult.bind(this);
+        this.nextResult = this._next.bind(this);
         this.nextThrow = this._throw.bind(this);
 
         /* this is just the process generator */
@@ -167,7 +167,7 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
         super.complete();
     }
 
-    _nextResult(res?: any): void {
+    _next(res?: any): void {
         //todo: refactor _nextYield
         return this.nextYield(res);
     }
@@ -177,6 +177,7 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
         return this.nextYield(null, err);
     }
 
+    /* Topologically a glorified wrapper for this.process.next and this.process.throw. */
     _nextYield(res?: any, err?: any): void {
         let yielded: IteratorResult<any>;
         if (this.isStopped) return console.warn('Saga: yield call back occurs after process termination.');
