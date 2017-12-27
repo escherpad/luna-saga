@@ -4,7 +4,7 @@ import {Action} from "luna";
 import {take, dispatch, call, apply, select, fork, spawn} from "./effects/effectsHelpers";
 import {Store} from "luna/dist/index";
 import {Reducer} from "luna/dist/index";
-import {delay} from "./helpers";
+import {delay, throttle} from "./helpers";
 import {SAGA_CONNECT_ACTION} from "./Saga";
 import {isAction} from "./util/isAction";
 
@@ -254,6 +254,53 @@ describe("saga.effects.spec", function () {
 
         saga.run();
     });
+
+    it('throttle example', function (done: () => void) {
+        let id;
+
+        function asyncFunc() {
+            setTimeout(() => {
+                id += 1;
+            }, 5);
+        }
+
+        function* runner() {
+            id = 0;
+            let proc = new Saga(throttle(asyncFunc, "TRIG", 300, true));
+            proc.run();
+            proc.next({state: {}, action: {type: "TRIG"}});
+            yield call(delay, 100);
+            expect(id).toBe(1);
+            proc.next({state: {}, action: {type: "TRIG"}});
+            yield call(delay, 100);
+            expect(id).toBe(1);
+            yield call(delay, 110); // 305 ms point.
+            expect(id).toBe(2);
+            proc.complete();
+
+            id = 0;
+            proc = new Saga(throttle(asyncFunc, "TRIG", 200, false));
+            proc.run();
+            proc.next({state: {}, action: {type: "TRIG"}});
+            yield call(delay, 50);
+            expect(id).toBe(1);
+            proc.next({state: {}, action: {type: "TRIG"}});
+            yield call(delay, 160); // 210 ms point
+            expect(id).toBe(1);
+
+            // new cycle
+            proc.next({state: {}, action: {type: "TRIG"}});
+            expect(id).toBe(1);
+            yield call(delay, 15);
+            expect(id).toBe(2);
+
+            proc.complete();
+            done();
+        }
+
+        let p = new Saga(runner());
+        p.run()
+    })
 });
 
 

@@ -8,6 +8,88 @@ Luna-saga is a saga runner built for Luna, a reactive redux implementation based
 
 **get started:** run `npm install luna-saga --save` *after* you install `luna` with `npm install luna --save`
 
+
+## Throttling Example
+
+Here is a simple throttle helper that is implemented using saga, and it's test:
+
+first the throttle function:
+```typescript
+/** throttle process: Takes in a task function, a trigger object <RegExp, string, TSym>, input interval, and flag for triggering on falling edge. */
+export function* throttle(task: Function, trigger: void | any, interval = 300, falling = true): Generator {
+
+    let rising, trail, proc;
+
+    function* takeOne() {
+        // take only one.
+        yield take(trigger);
+        trail = true;
+    }
+
+    while (true) {
+        yield take(trigger);
+        rising = true;
+        while (trail && falling || rising) {
+            if (rising) rising = false;
+            trail = false;
+            // take one from the rest
+            proc = yield spawn(takeOne);
+            yield spawn(task);
+            yield call(delay, interval);
+            if (!proc.isStopped) proc.complete(); // make sure we remove the child process from parent.
+        }
+    }
+}
+```
+To use this throttle function: 
+```typescript
+import {throttle} from "luna-saga";
+let id;
+
+function asyncFunc() {
+    setTimeout(() => {
+        id += 1;
+    }, 5);
+}
+
+function* runner() {
+    id = 0;
+    let proc = new Saga(throttle(asyncFunc, "TRIG", 300, true));
+    proc.run();
+    proc.next({state: {}, action: {type: "TRIG"}});
+    yield call(delay, 100);
+    expect(id).toBe(1);
+    proc.next({state: {}, action: {type: "TRIG"}});
+    yield call(delay, 100);
+    expect(id).toBe(1);
+    yield call(delay, 110); // 305 ms point.
+    expect(id).toBe(2);
+    proc.complete();
+
+    id = 0;
+    proc = new Saga(throttle(asyncFunc, "TRIG", 200, false));
+    proc.run();
+    proc.next({state: {}, action: {type: "TRIG"}});
+    yield call(delay, 50);
+    expect(id).toBe(1);
+    proc.next({state: {}, action: {type: "TRIG"}});
+    yield call(delay, 160); // 210 ms point
+    expect(id).toBe(1);
+
+    // new cycle
+    proc.next({state: {}, action: {type: "TRIG"}});
+    expect(id).toBe(1);
+    yield call(delay, 15);
+    expect(id).toBe(2);
+
+    proc.complete();
+    done();
+}
+
+let p = new Saga(runner());
+p.run()
+```
+
 ## For Angular2 Developers Out There~
 
 `luna-saga` is written in TypeScript with Angular2 in mind. You can directly import it to your ng2 project. To use angular's dependency injection, you can write a simple provider. Personally I prefer to keep things uncoupled from the framework as much as possible, this is why `luna-saga` is written with Angular2 in mind but does not depend on it.
