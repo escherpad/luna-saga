@@ -35,6 +35,16 @@
  * todo: join(task)
  * todo: cancel(task)
  */
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 var Sym_1 = require("../util/Sym");
 var isArray_1 = require("../util/isArray");
@@ -47,6 +57,15 @@ function take(actionType) {
     return { type: exports.TAKE, actionType: actionType };
 }
 exports.take = take;
+var TakeError = /** @class */ (function (_super) {
+    __extends(TakeError, _super);
+    function TakeError(e) {
+        var _this = _super.call(this, "TakeError in first filter") || this;
+        _this.original = e;
+        return _this;
+    }
+    return TakeError;
+}(Error));
 function takeHandler(effect, _this) {
     var actionType = effect.actionType;
     /* Only take handler uses SynchronousPromise. This is okay because synchronous promise chain breaks the callstack.
@@ -72,8 +91,8 @@ function takeHandler(effect, _this) {
             }
             catch (e) {
                 console.warn(e);
+                reject(new TakeError(e));
             }
-            console.log(result);
             return result;
         })
             .subscribe(function (update) {
