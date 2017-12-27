@@ -73,6 +73,12 @@ class ChildErr {
     };
 }
 
+class NO_PROCESS_ITERATOR extends Error {
+    constructor() {
+        super("Saga requires a process iterator as the constructor input.")
+    }
+}
+
 export default class Saga<TState> extends ProcessSubject<StateActionBundle<TState>> {
     private value: StateActionBundle<any>;
     private process: Iterator<any>;
@@ -118,7 +124,7 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
     }
 
     run() {
-        if (typeof this.process === "undefined") return this;
+        if (typeof this.process === "undefined") throw new NO_PROCESS_ITERATOR();
         this.nextYield();
         return this;
     }
@@ -167,30 +173,31 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
         super.complete();
     }
 
-    _next(res?: any): void {
+    _next(res?: any): void | any {
         //todo: refactor _nextYield
         return this.nextYield(res);
     }
 
-    _throw(err?: any): void {
+    _throw(err?: any): void | any {
         //todo: refactor _nextYield
         return this.nextYield(null, err);
     }
 
     /* Topologically a glorified wrapper for this.process.next and this.process.throw. */
-    _nextYield(res?: any, err?: any): void {
+    _nextYield(res?: any, err?: any): void | any {
         let yielded: IteratorResult<any>;
         if (this.isStopped) return console.warn('Saga: yield call back occurs after process termination.');
         /* Handle Errors */
         if (typeof err !== "undefined" && !isNull(err)) {
-            /* [DONE] we need to handle the error here in case the generator does not handle it correctly.*/
+            /* [DONE] we need to raise from Saga to the generator.*/
             try {
-                /* Do NOT terminate, since this error handling happens for callback functions */
+                /* Do NOT terminate, since this error handling happens INSIDE SAGA, eg. for callback functions */
                 yielded = this.process.throw(err);
             } catch (e) {
-                console.warn('THIS SHOULD NEVER BE HIT');
                 /* print error, which automatically completes the process.*/
-                return this.error(e);
+                this.error(e);
+                /* break the callback stack. */
+                throw new Error('THIS SHOULD NEVER BE HIT');
             }
         } else {
             /* if an error occur not through `yield`, we will need to intercept it here.*/
@@ -200,7 +207,7 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
                 this.error(e);
                 this.process.throw(e);
                 /* the Generator is already running error usually means multiple recursive next() calls happened */
-                console.error('THIS SHOULD NEVER SHOW B/C OF THROW')
+                throw new Error('THIS SHOULD NEVER SHOW B/C OF THROW')
             }
         }
         /* Now evaluate the yielded result... */
@@ -218,6 +225,7 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
             throw "`yielded` need to exist";
         }
         if (!!yielded.done) {
+            // todo: take care of return calls, change logic flow.
             /* Done results *always* have value undefined. */
             this.complete();
             return;
@@ -237,11 +245,11 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
                 /* synchronous next call */
                 if (!!err) {
                     this.log$.next(CallbackThrow(err));
-                    // need to break the callstack b/c still inside process.next call
+                    // need to break the callstack b/c still inside process.next call and this callback is synchronous.
                     setImmediate(() => this.nextThrow(err));
                 } else {
                     this.log$.next(CallbackReturn(res));
-                    // need to break the callstack b/c still inside process.next call
+                    // need to break the callstack b/c still inside process.next call and this callback is synchronous.
                     setImmediate(() => this.nextResult(res));
                 }
             });
