@@ -105,7 +105,7 @@ export function dispatch(action: Action): IDispatchEffect {
 }
 
 export function dispatchHandler<T extends StateActionBundle<any>>(effect: IDispatchEffect, _this: TSaga<T>): Promise<any> {
-    return new Promise((resolve, reject) => {
+    return new SynchronousPromise((resolve, reject) => {
         let isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
         _this
@@ -164,7 +164,7 @@ export function callHandler<TState,
             // done: add generator handling logic
             // done: add error handling
             _this.halt();
-            return new Promise((resolve, reject) => _this.forkChildProcess(
+            return new SynchronousPromise((resolve, reject) => _this.forkChildProcess(
                 new Saga(result),
                 reject, // how to handle error?
                 () => {
@@ -283,7 +283,7 @@ export function select(selector?: string): ISelectEffect {
 
 export function selectHandler<T extends StateActionBundle<any>>(effect: ISelectEffect, _this: TSaga<T>): Promise<any> {
     let selector = effect.selector;
-    return new Promise((resolve, reject) => {
+    return new SynchronousPromise((resolve, reject) => {
         let isResolved = false;
         // [DONE] to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle.
         _this.replay$.take(1)

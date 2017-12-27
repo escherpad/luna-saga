@@ -204,8 +204,12 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
             try {
                 yielded = this.process.next(res);
             } catch (e) {
-                this.error(e);
-                this.process.throw(e);
+                /* The process has raised an exception */
+                let process = this.process; // maintain a copy of the process b/c this.error removes it.
+                this.error(e); // we need to terminate this saga before throwing the error back to the process.
+                /* we throw this error back, which terminates the generator. */
+                process.throw(e);
+                process = null;
                 /* the Generator is already running error usually means multiple recursive next() calls happened */
                 throw new Error('THIS SHOULD NEVER SHOW B/C OF THROW')
             }
