@@ -39,7 +39,6 @@ import { TEffectBase } from "./interfaces";
 import { Action, StateActionBundle } from "luna";
 import { TSaga } from "../interfaces";
 import Saga from "../Saga";
-export declare const EFFECT: TSym;
 export interface ITakeEffect extends TEffectBase {
     actionType: any;
 }

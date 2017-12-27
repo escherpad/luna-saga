@@ -44,9 +44,9 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
     destroy(): void;
     error(err: any): void;
     complete(): void;
-    _nextResult(res?: any): void;
-    _throw(err?: any): void;
-    _nextYield(res?: any, err?: any): void;
+    _next(res?: any): void | any;
+    _throw(err?: any): void | any;
+    _nextYield(res?: any, err?: any): void | any;
     _evaluateYield(yielded: IteratorResult<any>): void;
     _executeEffect(effect: TEffectBase & any): Promise<any>;
     getValue(): StateActionBundle<any>;

@@ -41,7 +41,7 @@ var isArray_1 = require("../util/isArray");
 var isIterator_1 = require("../util/isIterator");
 var Saga_1 = require("../Saga");
 var isPromise_1 = require("../util/isPromise");
-exports.EFFECT = Sym_1.Sym("EFFECT");
+var synchronous_promise_1 = require("synchronous-promise");
 exports.TAKE = Sym_1.Sym("TAKE");
 function take(actionType) {
     return { type: exports.TAKE, actionType: actionType };
@@ -49,7 +49,9 @@ function take(actionType) {
 exports.take = take;
 function takeHandler(effect, _this) {
     var actionType = effect.actionType;
-    return new Promise(function (resolve, reject) {
+    /* Only take handler uses SynchronousPromise. This is okay because synchronous promise chain breaks the callstack.
+    * This will NOT lead to recursive Iterator.next calls. */
+    return new synchronous_promise_1.SynchronousPromise(function (resolve, reject) {
         var isResolved = false;
         _this
             .first(function (update) {
@@ -93,7 +95,7 @@ function dispatch(action) {
 }
 exports.dispatch = dispatch;
 function dispatchHandler(effect, _this) {
-    return new Promise(function (resolve, reject) {
+    return new synchronous_promise_1.SynchronousPromise(function (resolve, reject) {
         var isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
         _this
@@ -137,6 +139,7 @@ function call(fn) {
     var _a;
 }
 exports.call = call;
+/* Use Saga<TState> instead of TSaga for the instance methods. */
 function callHandler(effect, _this) {
     var fn = effect.fn, args = effect.args, context = effect.context;
     try {
@@ -146,7 +149,7 @@ function callHandler(effect, _this) {
             // done: add generator handling logic
             // done: add error handling
             _this.halt();
-            return new Promise(function (resolve, reject) { return _this.forkChildProcess(new Saga_1.default(result_1), reject, // how to handle error?
+            return new synchronous_promise_1.SynchronousPromise(function (resolve, reject) { return _this.forkChildProcess(new Saga_1.default(result_1), reject, // how to handle error?
             function () {
                 _this.resume();
                 resolve();
@@ -264,7 +267,7 @@ function select(selector) {
 exports.select = select;
 function selectHandler(effect, _this) {
     var selector = effect.selector;
-    return new Promise(function (resolve, reject) {
+    return new synchronous_promise_1.SynchronousPromise(function (resolve, reject) {
         var isResolved = false;
         // [DONE] to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle.
         _this.replay$.take(1)

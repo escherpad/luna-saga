@@ -73,6 +73,13 @@ var ChildErr = /** @class */ (function () {
     ;
     return ChildErr;
 }());
+var NO_PROCESS_ITERATOR = /** @class */ (function (_super) {
+    __extends(NO_PROCESS_ITERATOR, _super);
+    function NO_PROCESS_ITERATOR() {
+        return _super.call(this, "Saga requires a process iterator as the constructor input.") || this;
+    }
+    return NO_PROCESS_ITERATOR;
+}(Error));
 var Saga = /** @class */ (function (_super) {
     __extends(Saga, _super);
     function Saga(proc) {
@@ -81,7 +88,7 @@ var Saga = /** @class */ (function (_super) {
         _this.childProcesses = [];
         _this.nextYield = _this._nextYield.bind(_this);
         _this.evaluateYield = _this._evaluateYield.bind(_this);
-        _this.nextResult = _this._nextResult.bind(_this);
+        _this.nextResult = _this._next.bind(_this);
         _this.nextThrow = _this._throw.bind(_this);
         /* this is just the process generator */
         _this.process = proc;
@@ -106,7 +113,7 @@ var Saga = /** @class */ (function (_super) {
     };
     Saga.prototype.run = function () {
         if (typeof this.process === "undefined")
-            return this;
+            throw new NO_PROCESS_ITERATOR();
         this.nextYield();
         return this;
     };
@@ -151,7 +158,7 @@ var Saga = /** @class */ (function (_super) {
         /* Complete the parent first, to make sure that `this.term$` signals termination. */
         _super.prototype.complete.call(this);
     };
-    Saga.prototype._nextResult = function (res) {
+    Saga.prototype._next = function (res) {
         //todo: refactor _nextYield
         return this.nextYield(res);
     };
@@ -159,21 +166,23 @@ var Saga = /** @class */ (function (_super) {
         //todo: refactor _nextYield
         return this.nextYield(null, err);
     };
+    /* Topologically a glorified wrapper for this.process.next and this.process.throw. */
     Saga.prototype._nextYield = function (res, err) {
         var yielded;
         if (this.isStopped)
             return console.warn('Saga: yield call back occurs after process termination.');
         /* Handle Errors */
         if (typeof err !== "undefined" && !isNull_1.isNull(err)) {
-            /* [DONE] we need to handle the error here in case the generator does not handle it correctly.*/
+            /* [DONE] we need to raise from Saga to the generator.*/
             try {
-                /* Do NOT terminate, since this error handling happens for callback functions */
+                /* Do NOT terminate, since this error handling happens INSIDE SAGA, eg. for callback functions */
                 yielded = this.process.throw(err);
             }
             catch (e) {
-                console.warn('THIS SHOULD NEVER BE HIT');
                 /* print error, which automatically completes the process.*/
-                return this.error(e);
+                this.error(e);
+                /* break the callback stack. */
+                throw new Error('THIS SHOULD NEVER BE HIT');
             }
         }
         else {
@@ -182,10 +191,14 @@ var Saga = /** @class */ (function (_super) {
                 yielded = this.process.next(res);
             }
             catch (e) {
-                this.error(e);
-                this.process.throw(e);
+                /* The process has raised an exception */
+                var process = this.process; // maintain a copy of the process b/c this.error removes it.
+                this.error(e); // we need to terminate this saga before throwing the error back to the process.
+                /* we throw this error back, which terminates the generator. */
+                process.throw(e);
+                process = null;
                 /* the Generator is already running error usually means multiple recursive next() calls happened */
-                console.error('THIS SHOULD NEVER SHOW B/C OF THROW');
+                throw new Error('THIS SHOULD NEVER SHOW B/C OF THROW');
             }
         }
         /* Now evaluate the yielded result... */
@@ -203,6 +216,7 @@ var Saga = /** @class */ (function (_super) {
             throw "`yielded` need to exist";
         }
         if (!!yielded.done) {
+            // todo: take care of return calls, change logic flow.
             /* Done results *always* have value undefined. */
             this.complete();
             return;
@@ -224,12 +238,12 @@ var Saga = /** @class */ (function (_super) {
                 /* synchronous next call */
                 if (!!err) {
                     _this.log$.next(isCallback_2.CallbackThrow(err));
-                    // need to break the callstack b/c still inside process.next call
+                    // need to break the callstack b/c still inside process.next call and this callback is synchronous.
                     setImmediate(function () { return _this.nextThrow(err); });
                 }
                 else {
                     _this.log$.next(isCallback_2.CallbackReturn(res));
-                    // need to break the callstack b/c still inside process.next call
+                    // need to break the callstack b/c still inside process.next call and this callback is synchronous.
                     setImmediate(function () { return _this.nextResult(res); });
                 }
             });
