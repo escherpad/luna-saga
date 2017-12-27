@@ -159,11 +159,11 @@ function callHandler(effect, _this) {
             return result_1;
         }
         else {
-            return Promise.resolve(result_1);
+            return synchronous_promise_1.SynchronousPromise.resolve(result_1);
         }
     }
     catch (e) {
-        return Promise.reject(e);
+        return synchronous_promise_1.SynchronousPromise.reject(e);
     }
 }
 exports.callHandler = callHandler;
@@ -195,17 +195,17 @@ function forkHandler(effect, _this) {
             var childProcess = new Saga_1.default(result);
             _this.forkChildProcess(childProcess);
             // todo: return a process id to allow process cancellation
-            return Promise.resolve(childProcess);
+            return synchronous_promise_1.SynchronousPromise.resolve(childProcess);
         }
         else if (isPromise_1.isPromise(result)) {
             return result;
         }
         else {
-            return Promise.resolve(result);
+            return synchronous_promise_1.SynchronousPromise.resolve(result);
         }
     }
     catch (e) {
-        return Promise.reject(e);
+        return synchronous_promise_1.SynchronousPromise.reject(e);
     }
 }
 exports.forkHandler = forkHandler;
@@ -237,17 +237,17 @@ function spawnHandler(effect, _this) {
             var childProcess = new Saga_1.default(result);
             _this.forkChildProcess(childProcess, null, null, true);
             // todo: return a process id to allow process cancellation
-            return Promise.resolve(childProcess);
+            return synchronous_promise_1.SynchronousPromise.resolve(childProcess);
         }
         else if (isPromise_1.isPromise(result)) {
             return result;
         }
         else {
-            return Promise.resolve(result);
+            return synchronous_promise_1.SynchronousPromise.resolve(result);
         }
     }
     catch (e) {
-        return Promise.reject(e);
+        return synchronous_promise_1.SynchronousPromise.reject(e);
     }
 }
 exports.spawnHandler = spawnHandler;
