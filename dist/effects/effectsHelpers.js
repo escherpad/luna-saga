@@ -41,7 +41,7 @@ var isArray_1 = require("../util/isArray");
 var isIterator_1 = require("../util/isIterator");
 var Saga_1 = require("../Saga");
 var isPromise_1 = require("../util/isPromise");
-var synchronous_promise_1 = require("synchronous-promise");
+var synchronous_promise_1 = require("@ge/synchronous-promise");
 exports.TAKE = Sym_1.Sym("TAKE");
 function take(actionType) {
     return { type: exports.TAKE, actionType: actionType };
