@@ -174,10 +174,10 @@ export function callHandler<TState,
         } else if (isPromise(result)) {
             return result;
         } else {
-            return Promise.resolve(result);
+            return SynchronousPromise.resolve(result);
         }
     } catch (e) {
-        return Promise.reject(e);
+        return SynchronousPromise.reject(e);
     }
 }
 
@@ -212,14 +212,14 @@ export function forkHandler<TState,
             const childProcess: Saga<TState> = new Saga(result as Iterator<TState>);
             _this.forkChildProcess(childProcess);
             // todo: return a process id to allow process cancellation
-            return Promise.resolve(childProcess);
+            return SynchronousPromise.resolve(childProcess);
         } else if (isPromise(result)) {
             return result as Promise<any>;
         } else {
-            return Promise.resolve(result);
+            return SynchronousPromise.resolve(result);
         }
     } catch (e) {
-        return Promise.reject(e);
+        return SynchronousPromise.reject(e);
     }
 }
 
@@ -254,14 +254,14 @@ export function spawnHandler<TState,
             const childProcess: Saga<TState> = new Saga(result as Iterator<TState>);
             _this.forkChildProcess(childProcess, null, null, true);
             // todo: return a process id to allow process cancellation
-            return Promise.resolve(childProcess);
+            return SynchronousPromise.resolve(childProcess);
         } else if (isPromise(result)) {
             return result as Promise<any>;
         } else {
-            return Promise.resolve(result);
+            return SynchronousPromise.resolve(result);
         }
     } catch (e) {
-        return Promise.reject(e);
+        return SynchronousPromise.reject(e);
     }
 }
 
