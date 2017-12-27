@@ -42,10 +42,9 @@ import {Action, StateActionBundle} from "luna";
 import {TSaga} from "../interfaces";
 import {isArray} from "../util/isArray";
 import {isIterator} from "../util/isIterator";
-import Saga, {ProcessSubject} from "../Saga";
+import Saga from "../Saga";
 import {isPromise} from "../util/isPromise";
-
-export const EFFECT: TSym = Sym("EFFECT");
+import {SynchronousPromise} from "synchronous-promise";
 
 export interface ITakeEffect extends TEffectBase {
     actionType: any;
@@ -59,7 +58,9 @@ export function take(actionType: any): ITakeEffect {
 
 export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffect, _this: TSaga<T>): Promise<any> {
     let actionType: any = effect.actionType;
-    return new Promise((resolve, reject) => {
+    /* Only take handler uses SynchronousPromise. This is okay because synchronous promise chain breaks the callstack.
+    * This will NOT lead to recursive Iterator.next calls. */
+    return new SynchronousPromise((resolve, reject) => {
         let isResolved = false;
         _this
             .first((update: StateActionBundle<any>): boolean => {
@@ -151,6 +152,7 @@ export function call(fn: any, ...args: any[]): ICallEffect {
     }
 }
 
+/* Use Saga<TState> instead of TSaga for the instance methods. */
 export function callHandler<TState,
     T extends StateActionBundle<TState>>(effect: ICallEffect,
                                          _this: Saga<TState>): Promise<any> {

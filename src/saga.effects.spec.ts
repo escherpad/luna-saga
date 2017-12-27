@@ -2,8 +2,6 @@
 import Saga, {CHILD_ERROR} from "./Saga";
 import {Action} from "luna";
 import {take, dispatch, call, apply, select, fork, spawn} from "./effects/effectsHelpers";
-import {Observable} from "rxjs/Observable";
-import {queue} from "rxjs/scheduler/queue";
 import {Store} from "luna/dist/index";
 import {Reducer} from "luna/dist/index";
 import {delay} from "./helpers";
@@ -77,7 +75,7 @@ describe("saga.effects.spec", function () {
         };
         let store$ = new Store({number: counterReducer});
         // subscribe the saga to the store (state,action) bundle
-        store$.update$.subscribe(saga);
+        saga.subscribeTo(store$.update$);
         saga.action$.subscribe((action: any) => {
             console.log("action: ", action);
             if (!isAction(action)) throw console.error("action is ill defined", action);
@@ -87,27 +85,22 @@ describe("saga.effects.spec", function () {
             console.log("thunk: ", _);
             store$.dispatch(_);
         });
-        saga.log$.subscribe((_: any) => console.log("log: ", _));
+        saga.log$.subscribe((_: any) => console.log("log$: ", _));
+        store$.update$.subscribe((_: any) => console.log("udpate$: ", _));
         saga.subscribe({error: (err: any) => console.log("saga error: ", err)});
         /* run saga before subscription to states$ in this synchronous case. */
         saga.run();
 
-        function run(action) {
-            return function runHandle() {
-                return new Promise((resolve, _) => {
-                    setTimeout(() => {
-                        store$.dispatch(action);
-                        resolve()
-                    }, 10);
-                });
-            };
+        function run(action: any) {
+            store$.dispatch(action);
+            console.log(`dispatch(${action})`);
         }
 
-        run(testActions[0])()
-            .then(run(testActions[1]))
-            .then(run(testActions[2]))
-            .then(run(testActions[3]))
-            .then(run(testActions[4]))
+        run(testActions[0]);
+        run(testActions[1]);
+        run(testActions[2]);
+        run(testActions[3]);
+        run(testActions[4]);
     });
 
     it("test select effect corner cases", function (done: () => void) {
