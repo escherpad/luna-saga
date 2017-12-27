@@ -44,7 +44,7 @@ import {isArray} from "../util/isArray";
 import {isIterator} from "../util/isIterator";
 import Saga from "../Saga";
 import {isPromise} from "../util/isPromise";
-import {SynchronousPromise} from "synchronous-promise";
+import {SynchronousPromise} from "@ge/synchronous-promise";
 
 export interface ITakeEffect extends TEffectBase {
     actionType: any;

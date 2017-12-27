@@ -41,9 +41,9 @@
   "author": "Ge Yang <yangge1987@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ge/synchronous-promise": "git+https://github.com/episodeyang/synchronous-promise.git#@ge/synchronous-promise",
     "lodash.isplainobject": "^4.0.6",
-    "setimmediate": "^1.0.4",
-    "synchronous-promise": "^2.0.3"
+    "setimmediate": "^1.0.4"
   },
   "peerDependencies": {
     "luna": "^1.6.3",
