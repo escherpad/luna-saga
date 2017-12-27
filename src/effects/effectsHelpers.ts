@@ -56,6 +56,15 @@ export function take(actionType: any): ITakeEffect {
     return {type: TAKE, actionType};
 }
 
+class TakeError extends Error {
+    public original: any;
+
+    constructor(e?: any) {
+        super("TakeError in first filter");
+        this.original = e;
+    }
+}
+
 export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffect, _this: TSaga<T>): Promise<any> {
     let actionType: any = effect.actionType;
     /* Only take handler uses SynchronousPromise. This is okay because synchronous promise chain breaks the callstack.
@@ -77,8 +86,8 @@ export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffec
                     }
                 } catch (e) {
                     console.warn(e);
+                    reject(new TakeError(e));
                 }
-                console.log(result);
                 return result;
             })
             .subscribe(
