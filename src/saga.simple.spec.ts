@@ -21,11 +21,11 @@ describe("saga.simple.spec: Promise Handling", function () {
         }
 
         function dummyAsyncFunc(cb: ICallbackFunc) {
-            cb("** async RESULT **");
+            cb(null, "** async RESULT **");
         }
 
         function dummyAsyncFuncThrowingError(cb: ICallbackFunc) {
-            cb(null, "** async ERROR **");
+            cb("** async ERROR **");
         }
 
         function* idMaker(): Iterator<any> {

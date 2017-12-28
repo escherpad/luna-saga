@@ -18,7 +18,7 @@ export interface ICallback {
 export const CALLBACK: ICallback = {type: $CALLBACK};
 export const CALLBACK_START: ICallback = {type: $CALLBACK_START};
 
-export function isCallback(callbackObject?: ICallback): boolean {
+export function isCallbackToken(callbackObject?: ICallback): boolean {
     return (!!callbackObject && callbackObject.type === $CALLBACK);
 }
 

@@ -1,6 +1,6 @@
 /** Created by ge on 12/4/15. */
 import {Action, Thunk, Reducer, Hash, StateActionBundle} from "luna";
-import {isCallback} from "./util/isCallback";
+import {isCallbackToken} from "./util/isCallback";
 import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
@@ -242,10 +242,11 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
         } else if (isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
             setImmediate(() => this.nextResult(yielded.value));
-        } else if (isCallback(yielded.value)) {
+        } else if (isCallbackToken(yielded.value)) {
             // no need to save the yielded result.
             this.log$.next(CALLBACK_START);
-            this.process.next((res?: any, err?: any): any | void => {
+            this.process.next((err?: any, res?: any): any | void => {
+                // does not support (, ...opts: Array<any>)
                 /* synchronous next call */
                 if (!!err) {
                     this.log$.next(CallbackThrow(err));
