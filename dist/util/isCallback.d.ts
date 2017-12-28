@@ -12,6 +12,6 @@ export interface ICallback {
 }
 export declare const CALLBACK: ICallback;
 export declare const CALLBACK_START: ICallback;
-export declare function isCallback(callbackObject?: ICallback): boolean;
+export declare function isCallbackToken(callbackObject?: ICallback): boolean;
 export declare function CallbackThrow(err: any): ICallback;
 export declare function CallbackReturn(res: any): ICallback;

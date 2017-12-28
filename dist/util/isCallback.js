@@ -8,10 +8,10 @@ exports.$CALLBACK_RETURN = Sym_1.Sym("$CALLBACK_RETURN");
 exports.$CALLBACK_THROW = Sym_1.Sym("$CALLBACK_THROW");
 exports.CALLBACK = { type: $CALLBACK };
 exports.CALLBACK_START = { type: exports.$CALLBACK_START };
-function isCallback(callbackObject) {
+function isCallbackToken(callbackObject) {
     return (!!callbackObject && callbackObject.type === $CALLBACK);
 }
-exports.isCallback = isCallback;
+exports.isCallbackToken = isCallbackToken;
 function CallbackThrow(err) {
     return {
         type: exports.$CALLBACK_THROW,

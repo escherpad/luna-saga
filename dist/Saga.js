@@ -231,10 +231,11 @@ var Saga = /** @class */ (function (_super) {
             this.thunk$.next(yielded.value);
             setImmediate(function () { return _this.nextResult(yielded.value); });
         }
-        else if (isCallback_1.isCallback(yielded.value)) {
+        else if (isCallback_1.isCallbackToken(yielded.value)) {
             // no need to save the yielded result.
             this.log$.next(isCallback_2.CALLBACK_START);
-            this.process.next(function (res, err) {
+            this.process.next(function (err, res) {
+                // does not support (, ...opts: Array<any>)
                 /* synchronous next call */
                 if (!!err) {
                     _this.log$.next(isCallback_2.CallbackThrow(err));
