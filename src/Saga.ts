@@ -5,11 +5,8 @@ import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
 import {isFunction} from "./util/isFunction";
-import {Subject, ReplaySubject, Observable, Observer} from "rxjs";
-import "rxjs/add/observable/of";
-import 'rxjs/add/operator/takeUntil';
-import 'rxjs/add/operator/take';
-import {ISubscription} from 'rxjs/Subscription';
+import {Subject, Subscription, ReplaySubject, Observable, Observer, of} from "rxjs";
+import {takeUntil, concat} from "rxjs/operators";
 import {isUndefined} from "./util/isUndefined";
 import "setimmediate"; // refer to https://github.com/YuzuJS/setImmediate/issues/48
 import {TEffectBase} from "./effects/interfaces";
@@ -39,21 +36,21 @@ export class AutoBindSubject<T> extends Subject<T> {
 export class ProcessSubject<T> extends AutoBindSubject<T> {
     public term$: Observable<any>;
     private _term$: Subject<any>;
-    public subscriptions: Array<ISubscription>;
+    public subscriptions: Array<Subscription>;
 
     constructor() {
         super();
         this.subscriptions = [];
         this._term$ = new Subject<any>();
         /* term$ is used to signal other observers of the end of ProcessSubject */
-        this.term$ = this._term$.concat(Observable.of(true));
+        this.term$ = this._term$.pipe(concat(of(true)));
         this.destroy = this.destroy.bind(this);
         /* call this.distroy on complete and error */
         this.subscribe(null, this.destroy, this.destroy)
     }
 
     subscribeTo($: Observable<T>): void {
-        this.subscriptions.push($.takeUntil(this.term$).subscribe(this.next));
+        this.subscriptions.push($.pipe(takeUntil(this.term$)).subscribe(this.next));
     }
 
     /* finally is an operator not a handle. Destroy doesn't exist on Sujects, so it is safe to use it here. */
@@ -316,12 +313,14 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
                      onFinally?: () => void,
                      noBubbling?: Boolean) {
         this.childProcesses.push(newProcess);
-        newProcess.action$.takeUntil(this.term$).subscribe(this.action$.next);
-        newProcess.thunk$.takeUntil(this.term$).subscribe(this.thunk$.next);
-        newProcess.log$.takeUntil(this.term$).subscribe(this.log$.next);
+        newProcess.action$.pipe(takeUntil(this.term$)).subscribe(this.action$.next);
+        newProcess.action$.pipe(takeUntil(this.term$)).subscribe(this.thunk$.next);
+        newProcess.action$.pipe(takeUntil(this.term$)).subscribe(this.log$.next);
         if (!noBubbling) newProcess.subscribe({error: (err) => this.error(new ChildErr(err))});
         /* We complete the process when the newProcess.error(e) is called. */
-        if (onError) newProcess.takeUntil(this.term$).subscribe({error: onError});
+        if (onError) {
+            newProcess.pipe(takeUntil(this.term$)).subscribe({error: onError});
+        }
         const fin = () => {
             this.removeChildProcess(newProcess);
             /* release newProcess from memory here. */

@@ -36,6 +36,7 @@
  */
 
 
+import {take as takeOp, first as firstOp, map as mapOp} from 'rxjs/operators';
 import {Sym, TSym} from "../util/Sym";
 import {TEffectBase} from "./interfaces";
 import {Action, StateActionBundle} from "luna";
@@ -72,24 +73,25 @@ export function takeHandler<T extends StateActionBundle<any>>(effect: ITakeEffec
     return new SynchronousPromise((resolve, reject) => {
         let isResolved = false;
         _this
-            .first((update: StateActionBundle<any>): boolean => {
-                let result = false;
-                try {
-                    if (!update.action.type) {
-                        result = false;
-                    } else if (update.action.type === actionType) {
-                        result = true;
-                    } else if (isArray(actionType)) {
-                        result = actionType.indexOf(update.action.type) > -1;
-                    } else {
-                        result = (actionType instanceof RegExp && !!update.action.type.match(actionType));
+            .pipe(firstOp((update: StateActionBundle<any>): boolean => {
+                    let result = false;
+                    try {
+                        if (!update.action.type) {
+                            result = false;
+                        } else if (update.action.type === actionType) {
+                            result = true;
+                        } else if (isArray(actionType)) {
+                            result = actionType.indexOf(update.action.type) > -1;
+                        } else {
+                            result = (actionType instanceof RegExp && !!update.action.type.match(actionType));
+                        }
+                    } catch (e) {
+                        console.warn(e);
+                        reject(new TakeError(e));
                     }
-                } catch (e) {
-                    console.warn(e);
-                    reject(new TakeError(e));
+                    return result;
                 }
-                return result;
-            })
+            ))
             .subscribe(
                 (update: T) => {
                     isResolved = true;
@@ -117,8 +119,9 @@ export function dispatchHandler<T extends StateActionBundle<any>>(effect: IDispa
     return new SynchronousPromise((resolve, reject) => {
         let isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
-        _this
-            .take(1) // do NOT use replay here b/c you want to wait for the next event.
+        _this.pipe(
+            takeOp(1)
+        ) // do NOT use replay here b/c you want to wait for the next event.
             .subscribe(
                 (saga: T) => {
                     isResolved = true;
@@ -295,14 +298,16 @@ export function selectHandler<T extends StateActionBundle<any>>(effect: ISelectE
     return new SynchronousPromise((resolve, reject) => {
         let isResolved = false;
         // [DONE] to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle.
-        _this.replay$.take(1)
-            .map((update: StateActionBundle<any>): any => {
+        _this.replay$.pipe(
+            takeOp(1),
+            mapOp((update: StateActionBundle<any>): any => {
                 if (typeof selector === "undefined") {
                     return update.state;
                 } else if (typeof selector === "string") {
                     return update.state[selector]
                 }
             })
+        )
             .subscribe(
                 (value: any) => {
                     isResolved = true;
