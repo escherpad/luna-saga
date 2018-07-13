@@ -7,6 +7,8 @@ import {isEffect} from "./effects/isEffect";
 import {isFunction} from "./util/isFunction";
 import {Subject, ReplaySubject, Observable, Observer} from "rxjs";
 import "rxjs/add/observable/of";
+import 'rxjs/add/operator/takeUntil';
+import 'rxjs/add/operator/take';
 import {ISubscription} from 'rxjs/Subscription';
 import {isUndefined} from "./util/isUndefined";
 import "setimmediate"; // refer to https://github.com/YuzuJS/setImmediate/issues/48
