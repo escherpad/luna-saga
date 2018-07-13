@@ -16,6 +16,7 @@ var isAction_1 = require("./util/isAction");
 var isEffect_1 = require("./effects/isEffect");
 var isFunction_1 = require("./util/isFunction");
 var rxjs_1 = require("rxjs");
+require("rxjs/add/observable/of");
 var isUndefined_1 = require("./util/isUndefined");
 require("setimmediate"); // refer to https://github.com/YuzuJS/setImmediate/issues/48
 var Sym_1 = require("./util/Sym");

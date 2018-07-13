@@ -1,6 +1,7 @@
 /** Created by ge on 12/4/15. */
 import { StateActionBundle } from "luna";
 import { Subject, ReplaySubject, Observable } from "rxjs";
+import "rxjs/add/observable/of";
 import { ISubscription } from 'rxjs/Subscription';
 import "setimmediate";
 import { TEffectBase } from "./effects/interfaces";
