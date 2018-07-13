@@ -16,9 +16,7 @@ var isAction_1 = require("./util/isAction");
 var isEffect_1 = require("./effects/isEffect");
 var isFunction_1 = require("./util/isFunction");
 var rxjs_1 = require("rxjs");
-require("rxjs/add/observable/of");
-require("rxjs/add/operator/takeUntil");
-require("rxjs/add/operator/take");
+var operators_1 = require("rxjs/operators");
 var isUndefined_1 = require("./util/isUndefined");
 require("setimmediate"); // refer to https://github.com/YuzuJS/setImmediate/issues/48
 var Sym_1 = require("./util/Sym");
@@ -48,14 +46,14 @@ var ProcessSubject = /** @class */ (function (_super) {
         _this.subscriptions = [];
         _this._term$ = new rxjs_1.Subject();
         /* term$ is used to signal other observers of the end of ProcessSubject */
-        _this.term$ = _this._term$.concat(rxjs_1.Observable.of(true));
+        _this.term$ = _this._term$.pipe(operators_1.concat(rxjs_1.of(true)));
         _this.destroy = _this.destroy.bind(_this);
         /* call this.distroy on complete and error */
         _this.subscribe(null, _this.destroy, _this.destroy);
         return _this;
     }
     ProcessSubject.prototype.subscribeTo = function ($) {
-        this.subscriptions.push($.takeUntil(this.term$).subscribe(this.next));
+        this.subscriptions.push($.pipe(operators_1.takeUntil(this.term$)).subscribe(this.next));
     };
     /* finally is an operator not a handle. Destroy doesn't exist on Sujects, so it is safe to use it here. */
     ProcessSubject.prototype.destroy = function () {
@@ -195,11 +193,11 @@ var Saga = /** @class */ (function (_super) {
             }
             catch (e) {
                 /* The process has raised an exception */
-                var process = this.process; // maintain a copy of the process b/c this.error removes it.
+                var process_1 = this.process; // maintain a copy of the process b/c this.error removes it.
                 this.error(e); // we need to terminate this saga before throwing the error back to the process.
                 /* we throw this error back, which terminates the generator. */
-                process.throw(e);
-                process = null;
+                process_1.throw(e);
+                process_1 = null;
                 /* the Generator is already running error usually means multiple recursive next() calls happened */
                 throw new Error('THIS SHOULD NEVER SHOW B/C OF THROW');
             }
@@ -310,14 +308,15 @@ var Saga = /** @class */ (function (_super) {
     Saga.prototype.forkChildProcess = function (newProcess, onError, onFinally, noBubbling) {
         var _this = this;
         this.childProcesses.push(newProcess);
-        newProcess.action$.takeUntil(this.term$).subscribe(this.action$.next);
-        newProcess.thunk$.takeUntil(this.term$).subscribe(this.thunk$.next);
-        newProcess.log$.takeUntil(this.term$).subscribe(this.log$.next);
+        newProcess.action$.pipe(operators_1.takeUntil(this.term$)).subscribe(this.action$.next);
+        newProcess.action$.pipe(operators_1.takeUntil(this.term$)).subscribe(this.thunk$.next);
+        newProcess.action$.pipe(operators_1.takeUntil(this.term$)).subscribe(this.log$.next);
         if (!noBubbling)
             newProcess.subscribe({ error: function (err) { return _this.error(new ChildErr(err)); } });
         /* We complete the process when the newProcess.error(e) is called. */
-        if (onError)
-            newProcess.takeUntil(this.term$).subscribe({ error: onError });
+        if (onError) {
+            newProcess.pipe(operators_1.takeUntil(this.term$)).subscribe({ error: onError });
+        }
         var fin = function () {
             _this.removeChildProcess(newProcess);
             /* release newProcess from memory here. */

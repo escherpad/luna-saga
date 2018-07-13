@@ -46,6 +46,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var operators_1 = require("rxjs/operators");
 var Sym_1 = require("../util/Sym");
 var isArray_1 = require("../util/isArray");
 var isIterator_1 = require("../util/isIterator");
@@ -73,7 +74,7 @@ function takeHandler(effect, _this) {
     return new synchronous_promise_1.SynchronousPromise(function (resolve, reject) {
         var isResolved = false;
         _this
-            .first(function (update) {
+            .pipe(operators_1.first(function (update) {
             var result = false;
             try {
                 if (!update.action.type) {
@@ -94,7 +95,7 @@ function takeHandler(effect, _this) {
                 reject(new TakeError(e));
             }
             return result;
-        })
+        }))
             .subscribe(function (update) {
             isResolved = true;
             resolve(update);
@@ -117,8 +118,7 @@ function dispatchHandler(effect, _this) {
     return new synchronous_promise_1.SynchronousPromise(function (resolve, reject) {
         var isResolved = false;
         /* the actions should be synchronous, however race condition need to be tested. */
-        _this
-            .take(1) // do NOT use replay here b/c you want to wait for the next event.
+        _this.pipe(operators_1.take(1)) // do NOT use replay here b/c you want to wait for the next event.
             .subscribe(function (saga) {
             isResolved = true;
             if (saga.action.type !== effect.action.type) {
@@ -289,15 +289,14 @@ function selectHandler(effect, _this) {
     return new synchronous_promise_1.SynchronousPromise(function (resolve, reject) {
         var isResolved = false;
         // [DONE] to populate the replay$ subject, use sagaConnect's SAGA_CONNECT_ACTION update bundle.
-        _this.replay$.take(1)
-            .map(function (update) {
+        _this.replay$.pipe(operators_1.take(1), operators_1.map(function (update) {
             if (typeof selector === "undefined") {
                 return update.state;
             }
             else if (typeof selector === "string") {
                 return update.state[selector];
             }
-        })
+        }))
             .subscribe(function (value) {
             isResolved = true;
             resolve(value);

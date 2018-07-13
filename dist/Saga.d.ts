@@ -1,10 +1,6 @@
 /** Created by ge on 12/4/15. */
 import { StateActionBundle } from "luna";
-import { Subject, ReplaySubject, Observable } from "rxjs";
-import "rxjs/add/observable/of";
-import 'rxjs/add/operator/takeUntil';
-import 'rxjs/add/operator/take';
-import { ISubscription } from 'rxjs/Subscription';
+import { Subject, Subscription, ReplaySubject, Observable } from "rxjs";
 import "setimmediate";
 import { TEffectBase } from "./effects/interfaces";
 import { TSym } from "./util/Sym";
@@ -19,7 +15,7 @@ export declare class AutoBindSubject<T> extends Subject<T> {
 export declare class ProcessSubject<T> extends AutoBindSubject<T> {
     term$: Observable<any>;
     private _term$;
-    subscriptions: Array<ISubscription>;
+    subscriptions: Array<Subscription>;
     constructor();
     subscribeTo($: Observable<T>): void;
     destroy(): void;

@@ -1,39 +1,3 @@
-/** Created by ge on 3/28/16.
- * These effect handling logic are not intended to be pure functions. They are
- * supposed to be aware of the parent thread via the `_this` parameter that is
- * passed in, and are free to call methods of the parent.
- *
- * Spinning up a new process however, is a bit tricky.
- *
- * ### Effect API Todo List
- * done: take,
- * todo: takeEvery,
- * todo: takeLatest,
- * done: select,
- * done: call, SYNC: run generators synchronously, continue after complete.
- * done: apply,
- * done: dispatch (same as `put` in redux-saga. We call `put` `dispatch` instead.),
- * todo: fork, ASYNC: fork out a new process without waiting for it's completion.
- * todo: fork(fn, ...args)
- * todo: fork([context, fn], ...args)
- * todo: takem,
- * todo: all, SYNC: `yield all([gen1, gen2, ...])` starts all generators at the same time, then wait for all to finish.
- * todo: race, SYNC: `yield race([gen1, gen2, ...])` starts all, wait for one to finish and cancel the others.
- * todo: cps,
- * todo: spawn,
- * todo: join,
- * todo: cancel,
- * todo: actionChannel,
- * todo: cancelled,
- * todo: flush,
- * todo: getContext,
- * todo: setContext,
- * todo: throttle,
- * todo: cps(fn, ...args)
- * todo: cps([context, fn], ...args)
- * todo: join(task)
- * todo: cancel(task)
- */
 import { TSym } from "../util/Sym";
 import { TEffectBase } from "./interfaces";
 import { Action, StateActionBundle } from "luna";
