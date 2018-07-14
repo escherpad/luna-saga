@@ -25,6 +25,8 @@ export interface IThenCallback {
     [key: string]: any | undefined;
 }
 export declare const CALLBACK: ICallback;
+export declare const THEN_CALLBACK: IThenCallback;
+export declare const ERROR_CALLBACK: IErrorCallback;
 export declare const CALLBACK_START: ICallback;
 export declare function isCallbackToken(callbackObject?: ICallback): boolean;
 export declare function isErrorToken(callbackObject?: IErrorCallback): boolean;

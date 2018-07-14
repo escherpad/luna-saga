@@ -3,7 +3,7 @@ import {TSym, Sym} from "./Sym";
 
 const $CALLBACK: TSym = Sym("CALLBACK");
 const $ERROR_CALLBACK: TSym = Sym("ERROR_CALLBACK");
-const $THEN_CALLBACK: TSym = Sym("then_CALLBACK");
+const $THEN_CALLBACK: TSym = Sym("THEN_CALLBACK");
 export const $CALLBACK_START: TSym = Sym("$CALLBACK_START");
 export const $CALLBACK_RETURN: TSym = Sym("$CALLBACK_RETURN");
 export const $CALLBACK_THROW: TSym = Sym("$CALLBACK_THROW");
@@ -39,6 +39,8 @@ export interface IThenCallback {
 }
 
 export const CALLBACK: ICallback = {type: $CALLBACK};
+export const THEN_CALLBACK: IThenCallback = {type: $THEN_CALLBACK};
+export const ERROR_CALLBACK: IErrorCallback = {type: $ERROR_CALLBACK};
 export const CALLBACK_START: ICallback = {type: $CALLBACK_START};
 
 export function isCallbackToken(callbackObject?: ICallback): boolean {
