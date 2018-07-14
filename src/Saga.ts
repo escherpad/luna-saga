@@ -1,6 +1,6 @@
 /** Created by ge on 12/4/15. */
 import {Action, Thunk, Reducer, Hash, StateActionBundle} from "luna";
-import {isCallbackToken} from "./util/isCallback";
+import {isCallbackToken, isErrorToken, isThenToken} from "./util/isCallback";
 import {isPromise} from "./util/isPromise";
 import {isAction} from "./util/isAction";
 import {isEffect} from "./effects/isEffect";
@@ -242,6 +242,28 @@ export default class Saga<TState> extends ProcessSubject<StateActionBundle<TStat
         } else if (isFunction(yielded.value)) {
             this.thunk$.next(yielded.value);
             setImmediate(() => this.nextResult(yielded.value));
+        } else if (isErrorToken(yielded.value)) {
+            this.log$.next(CALLBACK_START);
+            this.process.next((err?: any): any | void => {
+                // does not support (, ...opts: Array<any>)
+                /* synchronous next call */
+                if (!!err) {
+                    this.log$.next(CallbackThrow(err));
+                    // need to break the callstack b/c still inside process.next call and this callback is synchronous.
+                    setImmediate(() => this.nextThrow(err));
+                } else {
+                    this.log$.next(CallbackReturn());
+                }
+            });
+        } else if (isThenToken(yielded.value)) {
+            this.log$.next(CALLBACK_START);
+            this.process.next((res?: any): any | void => {
+                // does not support (, ...opts: Array<any>)
+                /* synchronous next call */
+                this.log$.next(CallbackReturn(res));
+                // need to break the callstack b/c still inside process.next call and this callback is synchronous.
+                setImmediate(() => this.nextResult(res));
+            });
         } else if (isCallbackToken(yielded.value)) {
             // no need to save the yielded result.
             this.log$.next(CALLBACK_START);
