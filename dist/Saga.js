@@ -232,6 +232,31 @@ var Saga = /** @class */ (function (_super) {
             this.thunk$.next(yielded.value);
             setImmediate(function () { return _this.nextResult(yielded.value); });
         }
+        else if (isCallback_1.isErrorToken(yielded.value)) {
+            this.log$.next(isCallback_2.CALLBACK_START);
+            this.process.next(function (err) {
+                // does not support (, ...opts: Array<any>)
+                /* synchronous next call */
+                if (!!err) {
+                    _this.log$.next(isCallback_2.CallbackThrow(err));
+                    // need to break the callstack b/c still inside process.next call and this callback is synchronous.
+                    setImmediate(function () { return _this.nextThrow(err); });
+                }
+                else {
+                    _this.log$.next(isCallback_2.CallbackReturn());
+                }
+            });
+        }
+        else if (isCallback_1.isThenToken(yielded.value)) {
+            this.log$.next(isCallback_2.CALLBACK_START);
+            this.process.next(function (res) {
+                // does not support (, ...opts: Array<any>)
+                /* synchronous next call */
+                _this.log$.next(isCallback_2.CallbackReturn(res));
+                // need to break the callstack b/c still inside process.next call and this callback is synchronous.
+                setImmediate(function () { return _this.nextResult(res); });
+            });
+        }
         else if (isCallback_1.isCallbackToken(yielded.value)) {
             // no need to save the yielded result.
             this.log$.next(isCallback_2.CALLBACK_START);
