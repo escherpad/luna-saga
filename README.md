@@ -518,7 +518,7 @@ Luna-saga is part of my effort on re-writting [escherpad](http://www.escherpad.c
 
 ## About Ge
 
-I'm a graduate student studying quantum information and quantum computer at University of Chicago. When I'm not tolling away in a cleanroom or working on experiments, I write `(java|type)script` to relax. You can find my publications here: [google scholar](https://scholar.google.com/citations?user=vaQcF6kAAAAJ&hl=en)
+I'm a graduate student studying quantum information and quantum computer at University of Chicago. When I'm not tolling away in a cleanroom or working on experiments, I write `(java|type)script` to relax. You can find my publications here: [google scholar](https://scholar.google.com/citations?user=kNtDoX8AAAAJ&hl=en)
 
 ## LICENSING
 
